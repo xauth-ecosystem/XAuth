@@ -22,6 +22,7 @@ class Main extends PluginBase implements Listener {
         $this->playerData = new Config($this->getDataFolder() . "players.yml", Config::YAML);
         $this->saveDefaultConfig();
         $this->configData = $this->getConfig();
+        $this->checkConfigVersion();
         $this->getServer()->getCommandMap()->register("register", new RegisterCommand($this));
         $this->getServer()->getCommandMap()->register("login", new LoginCommand($this));
         $this->getServer()->getCommandMap()->register("resetpassword", new ResetPasswordCommand($this));
@@ -48,6 +49,13 @@ class Main extends PluginBase implements Listener {
         }
     }
 
+    private function checkConfigVersion(): void {
+        $currentVersion = $this->getConfig()->get("config-version", 1.0);
+        if ($currentVersion < 1.0) {
+            $this->getLogger()->warning("Your config.yml is outdated! Please update it to latest config version.");
+        }
+    }
+    
     private function sendTitleMessage(Player $player, string $messageKey): void {
         if ($this->configData->get("enable_titles")) {
             $titleConfig = $this->configData->get("titles")[$messageKey];
