@@ -1,0 +1,34 @@
+# XAuth Configuration
+
+# If enabled, the player will be auto-logged in based on their IP address from the last session.
+auto-login: true
+
+# Enable or disable the title messages
+enable_titles: true
+
+messages:
+  register_prompt: "Please register with /register <password> <confirmpassword>"
+  register_success: "You have successfully registered!"
+  login_prompt: "Please log in with /login <password>"
+  login_success: "You have successfully logged in!"
+
+titles:
+  register_prompt:
+    title: "Register Now"
+    subtitle: "Use /register to register your account"
+    interval: 2
+  login_prompt:
+    title: "Log In"
+    subtitle: "Use /login to login your account"
+    interval: 2
+  register_success:
+    title: "Registration Complete!"
+    subtitle: "Welcome to the server!"
+    interval: 2
+  login_success:
+    title: "Login Successful!"
+    subtitle: "Enjoy your time!"
+    interval: 2
+
+# DON'T CHANGE THIS!
+config-version: 1.0
