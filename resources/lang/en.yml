@@ -1,0 +1,23 @@
+messages:
+  register_prompt: "Please register with /register <password> <confirmpassword>"
+  register_success: "You have successfully registered!"
+  login_prompt: "Please log in with /login <password>"
+  login_success: "You have successfully logged in!"
+  
+titles:
+  register_prompt:
+    title: "Register Now"
+    subtitle: "Use /register to register your account"
+    interval: 2  # interval in seconds between the title displays
+  login_prompt:
+    title: "Log In"
+    subtitle: "Use /login to login your account"
+    interval: 2
+  register_success:
+    title: "Registration Complete!"
+    subtitle: "Welcome to the server!"
+    interval: 2
+  login_success:
+    title: "Login Successful!"
+    subtitle: "Enjoy your time!"
+    interval: 2
