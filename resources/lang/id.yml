@@ -1,0 +1,23 @@
+messages:
+  register_prompt: "Register terlebih dahulu dengan mengetik /register <password> <password>"
+  register_success: "Kamu berhasil register!"
+  login_prompt: "Login terlebih dahulu dengan mengetik /login <password>"
+  login_success: "Kamu berhasil login!"
+  
+titles:
+  register_prompt:
+    title: "Register"
+    subtitle: "Ketik /register untuk register akun kamu!"
+    interval: 2
+  login_prompt:
+    title: "Log In"
+    subtitle: "Ketik /login untuk login ke akun kamu!"
+    interval: 2
+  register_success:
+    title: "Berhasil Register!"
+    subtitle: "Selamat Datang!"
+    interval: 2
+  login_success:
+    title: "Berhasil Login!"
+    subtitle: "Selamat Datang!"
+    interval: 2
