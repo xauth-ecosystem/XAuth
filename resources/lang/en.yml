@@ -8,7 +8,7 @@ titles:
   register_prompt:
     title: "Register Now"
     subtitle: "Use /register to register your account"
-    interval: 2  # interval in seconds between the title displays
+    interval: 2
   login_prompt:
     title: "Log In"
     subtitle: "Use /login to login your account"
