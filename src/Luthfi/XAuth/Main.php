@@ -5,7 +5,6 @@ namespace Luthfi\XAuth;
 use pocketmine\plugin\PluginBase;
 use pocketmine\event\Listener;
 use pocketmine\event\player\PlayerJoinEvent;
-use pocketmine\event\player\PlayerQuitEvent;
 use pocketmine\player\Player;
 use pocketmine\utils\Config;
 use Luthfi\XAuth\commands\RegisterCommand;
@@ -16,12 +15,15 @@ class Main extends PluginBase implements Listener {
 
     private Config $playerData;
     private Config $configData;
+    private Config $languageMessages;
 
     public function onEnable(): void {
         $this->getServer()->getPluginManager()->registerEvents($this, $this);
         $this->playerData = new Config($this->getDataFolder() . "players.yml", Config::YAML);
         $this->saveDefaultConfig();
         $this->configData = $this->getConfig();
+        $language = $this->configData->get("language", "en");
+        $this->languageMessages = new Config($this->getDataFolder() . "lang/" . $language . ".yml", Config::YAML);
         $this->checkConfigVersion();
         $this->getServer()->getCommandMap()->register("register", new RegisterCommand($this));
         $this->getServer()->getCommandMap()->register("login", new LoginCommand($this));
@@ -37,28 +39,28 @@ class Main extends PluginBase implements Listener {
             $currentIp = $player->getNetworkSession()->getIp();
 
             if ($this->configData->get("auto-login") && $ip === $currentIp) {
-                $player->sendMessage($this->configData->get("login_success"));
+                $player->sendMessage($this->languageMessages->get("messages")["login_success"]);
                 $this->sendTitleMessage($player, "login_success");
             } else {
-                $player->sendMessage($this->configData->get("login_prompt"));
+                $player->sendMessage($this->languageMessages->get("messages")["login_prompt"]);
                 $this->sendTitleMessage($player, "login_prompt");
             }
         } else {
-            $player->sendMessage($this->configData->get("register_prompt"));
+            $player->sendMessage($this->languageMessages->get("messages")["register_prompt"]);
             $this->sendTitleMessage($player, "register_prompt");
         }
     }
 
     private function checkConfigVersion(): void {
-        $currentVersion = $this->getConfig()->get("config-version", 1.0);
+        $currentVersion = $this->configData->get("config-version", 1.0);
         if ($currentVersion < 1.0) {
-            $this->getLogger()->warning("Your config.yml is outdated! Please update it to latest config version.");
+            $this->getLogger()->warning("Your config.yml is outdated! Please update it to the latest version.");
         }
     }
-    
+
     private function sendTitleMessage(Player $player, string $messageKey): void {
         if ($this->configData->get("enable_titles")) {
-            $titleConfig = $this->configData->get("titles")[$messageKey];
+            $titleConfig = $this->languageMessages->get("titles")[$messageKey];
             $title = $titleConfig["title"];
             $subtitle = $titleConfig["subtitle"];
             $interval = $titleConfig["interval"] * 20;
@@ -88,6 +90,6 @@ class Main extends PluginBase implements Listener {
     }
 
     public function getCustomMessages(): Config {
-        return $this->configData;
+        return $this->languageMessages;
     }
 }
