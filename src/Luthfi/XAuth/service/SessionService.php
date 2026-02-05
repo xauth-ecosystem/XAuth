@@ -29,24 +29,20 @@ namespace Luthfi\XAuth\service;
 
 use Generator;
 use Luthfi\XAuth\Main;
+use Luthfi\XAuth\repository\SessionRepository;
 use pocketmine\player\Player;
-use RuntimeException;
 
 class SessionService {
 
     private Main $plugin;
+    private SessionRepository $sessionRepository;
 
-    public function __construct(Main $plugin) {
+    public function __construct(Main $plugin, SessionRepository $sessionRepository) {
         $this->plugin = $plugin;
+        $this->sessionRepository = $sessionRepository;
     }
 
     public function handleSession(Player $player): Generator {
-        $dataProvider = $this->plugin->getDataProvider();
-        if ($dataProvider === null) {
-            $this->plugin->getLogger()->error("DataProvider is not available for handleSession.");
-            return;
-        }
-
         $autoLoginConfig = (array)$this->plugin->getConfig()->get('auto-login', []);
         $securityLevel = (int)($autoLoginConfig['security_level'] ?? 1);
         $lowerPlayerName = strtolower($player->getName());
@@ -56,7 +52,7 @@ class SessionService {
             return;
         }
 
-        $sessions = yield from $dataProvider->getSessionsByPlayer($player->getName());
+        $sessions = yield from $this->sessionRepository->findAllByPlayer($player->getName());
         $ip = $player->getNetworkSession()->getIp();
         $lifetime = (int)($autoLoginConfig['lifetime_seconds'] ?? 2592000);
         $refreshSession = (bool)($autoLoginConfig['refresh_session_on_login'] ?? true);
@@ -73,51 +69,55 @@ class SessionService {
         }
 
         if ($existingSessionId !== null) {
-            if ($refreshSession) {
-                yield from $dataProvider->refreshSession($existingSessionId, $lifetime);
+            $expiration = (int)($sessions[$existingSessionId]['expiration_time'] ?? 0);
+            if ($expiration > time()) {
+                // Session is valid, just refresh it.
+                // Note: Authentication is already done before calling this method in finalizeAuthentication.
+                
+                if ($refreshSession) {
+                    yield from $this->sessionRepository->refresh($existingSessionId, $lifetime);
+                } else {
+                    yield from $this->sessionRepository->updateLastActivity($existingSessionId);
+                }
+                
+                $player->sendMessage((string)($this->plugin->getCustomMessages()->get("messages.auto_login_success") ?? "§aAuto-logged in successfully."));
+            } else {
+                yield from $this->sessionRepository->delete($existingSessionId);
+                // Session expired, create new one below
+                $existingSessionId = null;
             }
-        } else {
+        }
+        
+        if ($existingSessionId === null) {
             $maxSessions = (int)($autoLoginConfig["max_sessions_per_player"] ?? 5);
             if ($maxSessions > 0) {
-                $currentSessions = yield from $dataProvider->getSessionsByPlayer($player->getName());
+                $currentSessions = yield from $this->sessionRepository->findAllByPlayer($player->getName());
                 if (count($currentSessions) >= $maxSessions) {
                     uasort($currentSessions, function($a, $b) {
                         return ($a['login_time'] ?? 0) <=> ($b['login_time'] ?? 0);
                     });
                     $sessionsToDeleteCount = count($currentSessions) - $maxSessions + 1;
                     $sessionsToDelete = array_slice(array_keys($currentSessions), 0, $sessionsToDeleteCount);
-                    foreach ($sessionsToDelete as $sessionId) {
-                        yield from $dataProvider->deleteSession($sessionId);
+                    foreach ($sessionsToDelete as $delSessionId) {
+                        yield from $this->sessionRepository->delete($delSessionId);
                     }
                 }
             }
-            yield from $dataProvider->createSession($player->getName(), $ip, $deviceId, $lifetime);
+            yield from $this->sessionRepository->create($player->getName(), $ip, $deviceId, $lifetime);
         }
     }
 
     public function getSessionsForPlayer(string $playerName): Generator {
-        $dataProvider = $this->plugin->getDataProvider();
-        if ($dataProvider === null) {
-            throw new RuntimeException("DataProvider is not available.");
-        }
-        
-        $sessions = yield from $dataProvider->getSessionsByPlayer($playerName);
-        return $sessions;
+        return yield from $this->sessionRepository->findAllByPlayer($playerName);
     }
 
     public function terminateSession(string $sessionId): Generator {
-        $dataProvider = $this->plugin->getDataProvider();
-        if ($dataProvider === null) {
-            $this->plugin->getLogger()->error("DataProvider is not available for terminateSession.");
-            throw new RuntimeException("DataProvider is not available.");
-        }
-        
-        $session = yield from $dataProvider->getSession($sessionId);
+        $session = yield from $this->sessionRepository->find($sessionId);
         if ($session === null) {
             return false;
         }
 
-        yield from $dataProvider->deleteSession($sessionId);
+        yield from $this->sessionRepository->delete($sessionId);
 
         $playerName = (string)($session['player_name'] ?? '');
         $player = $this->plugin->getServer()->getPlayerExact($playerName);
@@ -128,13 +128,7 @@ class SessionService {
     }
 
     public function terminateAllSessionsForPlayer(string $playerName): Generator {
-        $dataProvider = $this->plugin->getDataProvider();
-        if ($dataProvider === null) {
-            $this->plugin->getLogger()->error("DataProvider is not available for terminateAllSessionsForPlayer.");
-            throw new RuntimeException("DataProvider is not available.");
-        }
-        
-        yield from $dataProvider->deleteAllSessionsForPlayer($playerName);
+        yield from $this->sessionRepository->deleteAllForPlayer($playerName);
 
         $player = $this->plugin->getServer()->getPlayerExact($playerName);
         if ($player !== null && $this->plugin->getAuthenticationService()->isPlayerAuthenticated($player)) {
@@ -143,12 +137,6 @@ class SessionService {
     }
 
     public function cleanupExpiredSessions(): Generator {
-        $dataProvider = $this->plugin->getDataProvider();
-        if ($dataProvider === null) {
-            $this->plugin->getLogger()->error("DataProvider is not available for cleanupExpiredSessions.");
-            throw new RuntimeException("DataProvider is not available.");
-        }
-        
-        yield from $dataProvider->cleanupExpiredSessions();
+        yield from $this->sessionRepository->cleanupExpired();
     }
 }

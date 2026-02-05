@@ -84,21 +84,12 @@ class PlayerSessionListener implements Listener {
         }
 
         Await::f2c(function () use ($name, $event, $bruteforceConfig) {
-            if (yield from $this->plugin->getDataProvider()->isPlayerLocked($name)) {
-                $message = (string)(((array)$this->plugin->getCustomMessages()->get("messages"))["account_locked_by_admin"] ?? "");
-                $event->setKickFlag(PlayerPreLoginEvent::KICK_FLAG_BANNED, $message);
+            if (yield from $this->plugin->getUserRepository()->isLocked($name)) {
+                $player->kick((string)($messages["account_locked_by_admin"] ?? "§cYour account has been locked by an administrator."));
                 return;
             }
 
-            if ((bool)($bruteforceConfig['enabled'] ?? false)) {
-                $blockedUntil = yield from $this->plugin->getDataProvider()->getBlockedUntil($name);
-                if ($blockedUntil > time()) {
-                    $remainingMinutes = (int)ceil(($blockedUntil - time()) / 60);
-                    $message = (string)(((array)$this->plugin->getCustomMessages()->get("messages"))["login_attempts_exceeded"] ?? "");
-                    $message = str_replace('{minutes}', (string)$remainingMinutes, $message);
-                    $event->setKickFlag(PlayerPreLoginEvent::KICK_FLAG_BANNED, $message);
-                }
-            }
+            $blockedUntil = yield from $this->plugin->getUserRepository()->getBlockedUntil($name);
         });
     }
 

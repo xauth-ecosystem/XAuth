@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace Luthfi\XAuth\commands;
 
+use Luthfi\XAuth\event\PlayerPreAuthenticateEvent;
 use Luthfi\XAuth\exception\AccountLockedException;
 use Luthfi\XAuth\exception\AlreadyLoggedInException;
 use Luthfi\XAuth\exception\IncorrectPasswordException;
@@ -72,8 +73,10 @@ class LoginCommand extends Command implements PluginOwned {
 
         Await::g2c(
             $this->plugin->getAuthenticationService()->handleLoginRequest($sender, $password),
-            static function(): void {
-                // Success is handled by the service
+            function() use ($sender): void {
+                $context = $this->plugin->getAuthenticationFlowManager()->ensureContextExists($sender);
+                $context->setLoginType(PlayerPreAuthenticateEvent::LOGIN_TYPE_MANUAL);
+                $this->plugin->getAuthenticationFlowManager()->completeStep($sender, 'xauth_login');
             },
             function(Throwable $e) use ($sender, $messages): void {
                 switch (true) {

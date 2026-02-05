@@ -34,8 +34,6 @@ use Luthfi\XAuth\commands\RegisterCommand;
 use Luthfi\XAuth\commands\ResetPasswordCommand;
 use Luthfi\XAuth\commands\UnregisterCommand;
 use Luthfi\XAuth\commands\XAuthCommand;
-use Luthfi\XAuth\database\DataProviderFactory;
-use Luthfi\XAuth\database\DataProviderInterface;
 use Luthfi\XAuth\event\PlayerStateRestoreEvent;
 use Luthfi\XAuth\event\PlayerStateSaveEvent;
 use Luthfi\XAuth\expansion\XAuthExpansion;
@@ -46,6 +44,10 @@ use Luthfi\XAuth\listener\PlayerSessionListener;
 use Luthfi\XAuth\listener\ScoreHudListener;
 use Luthfi\XAuth\listener\WaterdogFixListener;
 use Luthfi\XAuth\service\AuthenticationService;
+use Luthfi\XAuth\database\DatabaseManager;
+use Luthfi\XAuth\repository\SessionRepository;
+use Luthfi\XAuth\repository\UserRepository;
+use Luthfi\XAuth\service\LoginThrottler;
 use Luthfi\XAuth\service\PlayerStateService;
 use Luthfi\XAuth\service\PlayerVisibilityService;
 use Luthfi\XAuth\service\PluginControlService;
@@ -58,7 +60,6 @@ use Luthfi\XAuth\steps\XAuthLoginStep;
 use Luthfi\XAuth\steps\XAuthRegisterStep;
 use Luthfi\XAuth\tasks\CleanupSessionsTask;
 use Luthfi\XAuth\tasks\KickTask;
-
 use Luthfi\XAuth\utils\MigrationManager;
 use MohamadRZ4\Placeholder\PlaceholderAPI;
 use pocketmine\player\Player;
@@ -70,7 +71,7 @@ use Throwable;
 
 class Main extends PluginBase {
 
-    private ?DataProviderInterface $dataProvider = null;
+    private ?DatabaseManager $databaseManager = null;
     private ?Config $configData = null;
     private ?Config $languageMessages = null;
     private ?FormManager $formManager = null;
@@ -85,6 +86,7 @@ class Main extends PluginBase {
     private ?MigrationManager $migrationManager = null;
     private ?AuthenticationFlowManager $authenticationFlowManager = null;
     private ?TitleManager $titleManager = null;
+    private ?LoginThrottler $loginThrottler = null;
 
 
 
@@ -112,19 +114,37 @@ class Main extends PluginBase {
         $this->passwordHasher = new PasswordHasher($this);
         $this->playerVisibilityService = new PlayerVisibilityService($this);
         $this->playerStateService = new PlayerStateService($this, $this->playerVisibilityService);
-        $this->authenticationService = new AuthenticationService($this);
-        $this->registrationService = new RegistrationService($this);
-        $this->sessionService = new SessionService($this);
         $this->pluginControlService = new PluginControlService($this);
         $this->titleManager = new TitleManager($this);
 
         try {
-            $this->dataProvider = DataProviderFactory::create($this, (array)$this->configData->get('database'));
-            $this->dataProvider->initializeSync();
-            $this->getLogger()->debug("DataProvider initialized (SYNC).");
+            $this->databaseManager = new DatabaseManager($this, (array)$this->configData->get('database'));
+            $this->databaseManager->connect();
+            $this->getLogger()->debug("DatabaseManager initialized.");
             $this->onDatabaseInitialized();
+
+            $userRepository = $this->databaseManager->getUserRepository();
+            $sessionRepository = $this->databaseManager->getSessionRepository();
+
+            $this->loginThrottler = new LoginThrottler($this, $userRepository);
+            $this->sessionService = new SessionService($this, $sessionRepository);
+            $this->registrationService = new RegistrationService($this, $userRepository);
+
+            $this->authenticationService = new AuthenticationService(
+                $this,
+                $userRepository,
+                $sessionRepository,
+                $this->passwordHasher,
+                $this->sessionService,
+                $this->playerStateService,
+                $this->playerVisibilityService,
+                $this->titleManager,
+                $this->formManager,
+                $this->loginThrottler
+            );
+
         } catch (Throwable $e) {
-            $this->getLogger()->error("Failed to initialize DataProvider: " . $e->getMessage());
+            $this->getLogger()->error("Failed to initialize database: " . $e->getMessage());
             $this->getServer()->getPluginManager()->disablePlugin($this);
             return;
         }
@@ -187,10 +207,12 @@ class Main extends PluginBase {
         }
     }
 
+    public function getUserRepository(): ?UserRepository {
+        return $this->databaseManager?->getUserRepository();
+    }
 
-
-    public function getDataProvider(): ?DataProviderInterface {
-        return $this->dataProvider;
+    public function getSessionRepository(): ?SessionRepository {
+        return $this->databaseManager?->getSessionRepository();
     }
 
     public function getCustomMessages(): ?Config {
@@ -243,6 +265,10 @@ class Main extends PluginBase {
 
     public function getTitleManager(): ?TitleManager {
         return $this->titleManager;
+    }
+
+    public function getLoginThrottler(): ?LoginThrottler {
+        return $this->loginThrottler;
     }
 
     /**
@@ -315,8 +341,8 @@ class Main extends PluginBase {
 
 
     public function onDisable(): void {
-        if ($this->dataProvider !== null) {
-            $this->dataProvider->close();
+        if ($this->databaseManager !== null) {
+            $this->databaseManager->close();
         }
     }
 }

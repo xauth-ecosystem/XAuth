@@ -33,7 +33,7 @@ use Luthfi\XAuth\Main;
 use pocketmine\player\Player;
 use SOFe\AwaitGenerator\Await;
 
-class XAuthRegisterStep implements AuthenticationStep {
+class XAuthRegisterStep implements AuthenticationStep, FinalizableStep {
 
     private Main $plugin;
 
@@ -52,7 +52,7 @@ class XAuthRegisterStep implements AuthenticationStep {
                 return;
             }
 
-            $playerData = yield from $this->plugin->getDataProvider()->getPlayer($player);
+            $playerData = yield from $this->plugin->getUserRepository()->findByName($player->getName());
             if ($playerData === null) {
                 $this->plugin->getPlayerStateService()->protectPlayer($player);
                 $this->plugin->scheduleKickTask($player);
@@ -71,13 +71,18 @@ class XAuthRegisterStep implements AuthenticationStep {
     }
 
     public function complete(Player $player): void {
-        $messages = (array)$this->plugin->getCustomMessages()->get("messages");
-        $player->sendMessage((string)($messages["register_success"] ?? "§aYou have successfully registered!"));
-        $this->plugin->getTitleManager()->sendTitle($player, "register_success", 2 * 20);
-        (new PlayerRegisterEvent($player))->call();
+        $this->plugin->getAuthenticationFlowManager()->completeStep($player, $this->getId());
     }
 
     public function skip(Player $player): void {
         $this->plugin->getAuthenticationFlowManager()->skipStep($player, $this->getId());
+    }
+
+    public function onFlowComplete(Player $player, AuthenticationContext $context): void {
+        if ($context->wasStepCompleted($this->getId())) {
+            $messages = (array)$this->plugin->getCustomMessages()->get("messages");
+            $player->sendMessage((string)($messages["register_success"] ?? "§aYou have successfully registered!"));
+            $this->plugin->getTitleManager()->sendTitle($player, "register_success", 2 * 20);
+        }
     }
 }

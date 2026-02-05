@@ -62,8 +62,8 @@ class ScoreHudListener implements Listener {
 
         Await::f2c(function () use ($plugin, $player, $instance) {
             $isAuthenticated = $plugin->getAuthenticationService()->isPlayerAuthenticated($player);
-            $isRegistered = yield from $plugin->getDataProvider()->isPlayerRegistered($player->getName());
-            $isLocked = yield from $plugin->getDataProvider()->isPlayerLocked($player->getName());
+            $isRegistered = yield from $plugin->getUserRepository()->exists($player->getName());
+            $isLocked = yield from $plugin->getUserRepository()->isLocked($player->getName());
 
             (new PlayerTagUpdateEvent($player, new ScoreTag("xauth.is_authenticated", $instance->getScoreHudBooleanText("is_authenticated", $isAuthenticated))))->call();
             (new PlayerTagUpdateEvent($player, new ScoreTag("xauth.is_registered", $instance->getScoreHudBooleanText("is_registered", $isRegistered))))->call();

@@ -29,6 +29,7 @@ namespace Luthfi\XAuth;
 
 use jojoe77777\FormAPI\CustomForm;
 use Luthfi\XAuth\event\PlayerChangePasswordEvent;
+use Luthfi\XAuth\event\PlayerPreAuthenticateEvent;
 use Luthfi\XAuth\exception\AccountLockedException;
 use Luthfi\XAuth\exception\AlreadyLoggedInException;
 use Luthfi\XAuth\exception\AlreadyRegisteredException;
@@ -39,6 +40,8 @@ use Luthfi\XAuth\exception\PlayerBlockedException;
 use Luthfi\XAuth\exception\RegistrationRateLimitException;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
 use pocketmine\player\Player;
+use SOFe\AwaitGenerator\Await;
+use Throwable;
 
 class FormManager {
 
@@ -65,30 +68,38 @@ class FormManager {
 
             $password = (string)($data["password"] ?? '');
 
-            try {
-                $this->plugin->getAuthenticationService()->handleLoginRequest($player, $password);
-            } catch (AlreadyLoggedInException $e) {
-                $this->sendLoginForm($player, (string)($messages["already_logged_in"] ?? "§cYou are already logged in."));
-            } catch (PlayerBlockedException $e) {
-                $message = (string)($messages["login_attempts_exceeded"] ?? "§cYou have exceeded the number of login attempts. Please try again in {minutes} minutes.");
-                $message = str_replace('{minutes}', (string)$e->getRemainingMinutes(), $message);
-                $bruteforceConfig = (array)$this->plugin->getConfig()->get('bruteforce_protection');
-                $kickOnBlock = (bool)($bruteforceConfig['kick_on_block'] ?? true);
-                if ($kickOnBlock) {
-                    $player->kick($message);
-                } else {
-                    $this->sendLoginForm($player, $message);
+            Await::g2c(
+                $this->plugin->getAuthenticationService()->handleLoginRequest($player, $password),
+                function () use ($player): void {
+                    $context = $this->plugin->getAuthenticationFlowManager()->ensureContextExists($player);
+                    $context->setLoginType(PlayerPreAuthenticateEvent::LOGIN_TYPE_MANUAL);
+                    $this->plugin->getAuthenticationFlowManager()->completeStep($player, 'xauth_login');
+                },
+                function (Throwable $e) use ($player, $messages): void {
+                    if ($e instanceof AlreadyLoggedInException) {
+                        $this->sendLoginForm($player, (string)($messages["already_logged_in"] ?? "§cYou are already logged in."));
+                    } elseif ($e instanceof PlayerBlockedException) {
+                        $message = (string)($messages["login_attempts_exceeded"] ?? "§cYou have exceeded the number of login attempts. Please try again in {minutes} minutes.");
+                        $message = str_replace('{minutes}', (string)$e->getRemainingMinutes(), $message);
+                        $bruteforceConfig = (array)$this->plugin->getConfig()->get('bruteforce_protection');
+                        $kickOnBlock = (bool)($bruteforceConfig['kick_on_block'] ?? true);
+                        if ($kickOnBlock) {
+                            $player->kick($message);
+                        } else {
+                            $this->sendLoginForm($player, $message);
+                        }
+                    } elseif ($e instanceof NotRegisteredException) {
+                        $this->sendLoginForm($player, (string)($messages["not_registered"] ?? "§cYou are not registered. Please use /register <password> to register."));
+                    } elseif ($e instanceof AccountLockedException) {
+                        $this->sendLoginForm($player, (string)($messages["account_locked_by_admin"] ?? "§cYour account has been locked by an administrator."));
+                    } elseif ($e instanceof IncorrectPasswordException) {
+                        $this->sendLoginForm($player, (string)($messages["incorrect_password"] ?? "§cIncorrect password. Please try again."));
+                    } else {
+                        $this->sendLoginForm($player, (string)($messages["unexpected_error"] ?? "§cAn unexpected error occurred. Please try again."));
+                        $this->plugin->getLogger()->error("An unexpected error occurred during form login: " . $e->getMessage());
+                    }
                 }
-            } catch (NotRegisteredException $e) {
-                $this->sendLoginForm($player, (string)($messages["not_registered"] ?? "§cYou are not registered. Please use /register <password> to register."));
-            } catch (AccountLockedException $e) {
-                $this->sendLoginForm($player, (string)($messages["account_locked_by_admin"] ?? "§cYour account has been locked by an administrator."));
-            } catch (IncorrectPasswordException $e) {
-                $this->sendLoginForm($player, (string)($messages["incorrect_password"] ?? "§cIncorrect password. Please try again."));
-            } catch (\Exception $e) {
-                $this->sendLoginForm($player, (string)($messages["unexpected_error"] ?? "§cAn unexpected error occurred. Please try again."));
-                $this->plugin->getLogger()->error("An unexpected error occurred during form login: " . $e->getMessage());
-            }
+            );
         });
 
         $form->setTitle((string)($loginFormConfig["title"] ?? "Login"));
@@ -187,21 +198,26 @@ class FormManager {
             $newPassword = (string)($data["new_password"] ?? '');
             $confirmNewPassword = (string)($data["confirm_new_password"] ?? '');
 
-            try {
-                $this->plugin->getAuthenticationService()->handleChangePasswordRequest($player, $oldPassword, $newPassword, $confirmNewPassword);
-                $player->sendMessage((string)($messages["change_password_success"] ?? "§aYour password has been changed successfully."));
-            } catch (IncorrectPasswordException $e) {
-                $this->sendChangePasswordForm($player, (string)($messages["incorrect_password"] ?? "§cIncorrect password."));
-            } catch (PasswordMismatchException $e) {
-                $this->sendChangePasswordForm($player, (string)($messages["password_mismatch"] ?? "§cPasswords do not match."));
-            } catch (InvalidCommandSyntaxException $e) {
-                $this->sendChangePasswordForm($player, $e->getMessage());
-            } catch (NotRegisteredException $e) {
-                $this->sendChangePasswordForm($player, (string)($messages["not_registered"] ?? "§cYou are not registered."));
-            } catch (\Exception $e) {
-                $this->sendChangePasswordForm($player, (string)($messages["unexpected_error"] ?? "§cAn unexpected error occurred. Please try again."));
-                $this->plugin->getLogger()->error("An unexpected error occurred during password change form: " . $e->getMessage());
-            }
+            Await::g2c(
+                $this->plugin->getAuthenticationService()->handleChangePasswordRequest($player, $oldPassword, $newPassword, $confirmNewPassword),
+                function () use ($player, $messages): void {
+                    $player->sendMessage((string)($messages["change_password_success"] ?? "§aYour password has been changed successfully."));
+                },
+                function (Throwable $e) use ($player, $messages): void {
+                    if ($e instanceof IncorrectPasswordException) {
+                        $this->sendChangePasswordForm($player, (string)($messages["incorrect_password"] ?? "§cIncorrect password."));
+                    } elseif ($e instanceof PasswordMismatchException) {
+                        $this->sendChangePasswordForm($player, (string)($messages["password_mismatch"] ?? "§cPasswords do not match."));
+                    } elseif ($e instanceof InvalidCommandSyntaxException) {
+                        $this->sendChangePasswordForm($player, $e->getMessage());
+                    } elseif ($e instanceof NotRegisteredException) {
+                        $this->sendChangePasswordForm($player, (string)($messages["not_registered"] ?? "§cYou are not registered."));
+                    } else {
+                        $this->sendChangePasswordForm($player, (string)($messages["unexpected_error"] ?? "§cAn unexpected error occurred. Please try again."));
+                        $this->plugin->getLogger()->error("An unexpected error occurred during password change form: " . $e->getMessage());
+                    }
+                }
+            );
         });
 
         $form->setTitle((string)($changePasswordFormConfig["title"] ?? "Change Password"));
@@ -236,17 +252,22 @@ class FormManager {
             $newPassword = (string)($data["new_password"] ?? '');
             $confirmNewPassword = (string)($data["confirm_new_password"] ?? '');
 
-            try {
-                $this->plugin->getAuthenticationService()->handleForceChangePasswordRequest($player, $newPassword, $confirmNewPassword);
-                $player->sendMessage((string)($messages["change_password_success"] ?? "§aYour password has been changed successfully."));
-            } catch (PasswordMismatchException $e) {
-                $this->sendForceChangePasswordForm($player, (string)($messages["password_mismatch"] ?? "§cPasswords do not match."));
-            } catch (InvalidCommandSyntaxException $e) {
-                $this->sendForceChangePasswordForm($player, $e->getMessage());
-            } catch (\Exception $e) {
-                $this->sendForceChangePasswordForm($player, (string)($messages["unexpected_error"] ?? "§cAn unexpected error occurred. Please try again."));
-                $this->plugin->getLogger()->error("An unexpected error occurred during forced password change form: " . $e->getMessage());
-            }
+            Await::g2c(
+                $this->plugin->getAuthenticationService()->handleForceChangePasswordRequest($player, $newPassword, $confirmNewPassword),
+                function () use ($player, $messages): void {
+                    $player->sendMessage((string)($messages["change_password_success"] ?? "§aYour password has been changed successfully."));
+                },
+                function (Throwable $e) use ($player, $messages): void {
+                    if ($e instanceof PasswordMismatchException) {
+                        $this->sendForceChangePasswordForm($player, (string)($messages["password_mismatch"] ?? "§cPasswords do not match."));
+                    } elseif ($e instanceof InvalidCommandSyntaxException) {
+                        $this->sendForceChangePasswordForm($player, $e->getMessage());
+                    } else {
+                        $this->sendForceChangePasswordForm($player, (string)($messages["unexpected_error"] ?? "§cAn unexpected error occurred. Please try again."));
+                        $this->plugin->getLogger()->error("An unexpected error occurred during forced password change form: " . $e->getMessage());
+                    }
+                }
+            );
         });
 
         $form->setTitle((string)($forceChangePasswordFormConfig["title"] ?? "Forced Password Change"));
