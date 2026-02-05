@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace Luthfi\XAuth\commands;
 
+use Luthfi\XAuth\event\PlayerPreAuthenticateEvent;
 use Luthfi\XAuth\exception\AccountLockedException;
 use Luthfi\XAuth\exception\AlreadyLoggedInException;
 use Luthfi\XAuth\exception\AlreadyRegisteredException;
@@ -75,8 +76,10 @@ class RegisterCommand extends Command implements PluginOwned {
 
         Await::g2c(
             $this->plugin->getRegistrationService()->handleRegistrationRequest($sender, $password, $confirmPassword),
-            static function(): void {
-                // Success is handled by the service
+            function() use ($sender): void {
+                $context = $this->plugin->getAuthenticationFlowManager()->ensureContextExists($sender);
+                $context->setLoginType(PlayerPreAuthenticateEvent::LOGIN_TYPE_REGISTRATION);
+                $this->plugin->getAuthenticationFlowManager()->completeStep($sender, 'xauth_register');
             },
             function(Throwable $e) use ($sender, $messages): void {
                 switch (true) {

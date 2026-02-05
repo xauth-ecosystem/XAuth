@@ -33,45 +33,27 @@ use poggit\libasynql\DataConnector;
 use poggit\libasynql\libasynql;
 
 class DataProviderFactory {
+    /** @var array<string, callable> */
+    private static array $providers = [
+        'sqlite' => [SqliteProvider::class, 'create'],
+        'mysql' => [MysqlProvider::class, 'create'],
+    ];
+
+    public static function registerProvider(string $type, callable $factory): void {
+        self::$providers[strtolower($type)] = $factory;
+    }
 
     public static function create(Main $plugin, array $config): DataProviderInterface {
         $providerType = strtolower((string)($config['type'] ?? 'sqlite'));
-        return self::createProvider($plugin, $providerType);
+        $connector = ConnectorFactory::create($plugin, $providerType);
+        return self::createProvider($plugin, $providerType, $connector);
     }
 
-    public static function createProvider(Main $plugin, string $providerType): DataProviderInterface {
-        $fullDbConfig = $plugin->getConfig()->get('database', []);
-
-        if (!isset($fullDbConfig[$providerType])) {
-            throw new InvalidArgumentException("Configuration for '" . $providerType . "' not found in the 'database' section of config.yml");
+    public static function createProvider(Main $plugin, string $providerType, DataConnector $connector): DataProviderInterface {
+        $type = strtolower($providerType);
+        if (!isset(self::$providers[$type])) {
+            throw new InvalidArgumentException("Invalid data provider type: " . $type);
         }
-
-        $providerConfig = $fullDbConfig[$providerType];
-        $providerConfig['type'] = $providerType;
-
-        $logQueries = $plugin->getConfig()->getNested('database.log_queries', false);
-
-        $originalType = $fullDbConfig['type'] ?? null;
-        $fullDbConfig['type'] = $providerType;
-
-        $connector = libasynql::create(
-            $plugin,
-            $fullDbConfig,
-            [$providerType => $providerType . ".sql"],
-            $logQueries
-        );
-
-        if ($originalType !== null) {
-            $fullDbConfig['type'] = $originalType;
-        }
-
-        switch ($providerType) {
-            case 'sqlite':
-                return new SqliteProvider($plugin, $connector);
-            case 'mysql':
-                return new MysqlProvider($plugin, $connector);
-            default:
-                throw new InvalidArgumentException("Invalid data provider type: " . $providerType);
-        }
+        return call_user_func(self::$providers[$type], $plugin, $connector);
     }
 }

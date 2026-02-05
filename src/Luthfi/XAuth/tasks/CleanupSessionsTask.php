@@ -42,7 +42,7 @@ class CleanupSessionsTask extends Task {
     public function onRun(): void {
         Await::f2c(function () {
             $this->plugin->getLogger()->debug("Attempting to clean up expired sessions asynchronously.");
-            yield from $this->plugin->getDataProvider()->cleanupExpiredSessions();
+            yield from $this->plugin->getSessionRepository()->cleanupExpired();
             $this->plugin->getLogger()->debug("Cleaned up expired sessions.");
         });
     }

@@ -45,15 +45,19 @@ use pocketmine\player\Player;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
 use RuntimeException;
 
+use Luthfi\XAuth\repository\UserRepository;
+
 class RegistrationService {
 
     private Main $plugin;
+    private UserRepository $userRepository;
 
     /** @var array<string, int> */
     private array $confirmations = [];
 
-    public function __construct(Main $plugin) {
+    public function __construct(Main $plugin, UserRepository $userRepository) {
         $this->plugin = $plugin;
+        $this->userRepository = $userRepository;
     }
 
     /**
@@ -69,17 +73,17 @@ class RegistrationService {
             throw new AlreadyLoggedInException();
         }
 
-        if (yield from $this->plugin->getDataProvider()->isPlayerRegistered($player->getName())) {
+        if (yield from $this->userRepository->exists($player->getName())) {
             throw new AlreadyRegisteredException();
         }
 
-        if (yield from $this->plugin->getDataProvider()->isPlayerLocked($player->getName())) {
+        if (yield from $this->userRepository->isLocked($player->getName())) {
             throw new AccountLockedException();
         }
 
         $ipAddress = $player->getNetworkSession()->getIp();
         $maxRegistrations = (int)($this->plugin->getConfig()->getNested("registration.max_per_ip") ?? 0);
-        if ($maxRegistrations > 0 && (yield from $this->plugin->getDataProvider()->getRegistrationCountByIp($ipAddress)) >= $maxRegistrations) {
+        if ($maxRegistrations > 0 && (yield from $this->userRepository->getRegistrationCountByIp($ipAddress)) >= $maxRegistrations) {
             throw new RegistrationRateLimitException();
         }
 
@@ -93,13 +97,9 @@ class RegistrationService {
 
         $this->plugin->cancelKickTask($player);
         $hashedPassword = $this->plugin->getPasswordHasher()->hashPassword($password);
-        yield from $this->plugin->getDataProvider()->registerPlayer($player, $hashedPassword);
-
-        $context = $this->plugin->getAuthenticationFlowManager()->ensureContextExists($player);
-        $context->setLoginType(PlayerPreAuthenticateEvent::LOGIN_TYPE_REGISTRATION);
+        yield from $this->userRepository->create($player, $hashedPassword);
 
         (new PlayerRegisterEvent($player))->call();
-        $this->plugin->getAuthenticationFlowManager()->completeStep($player, 'xauth_register');
     }
 
     public function initiateUnregistration(Player $player): void {
@@ -123,14 +123,14 @@ class RegistrationService {
             throw new ConfirmationExpiredException();
         }
 
-        $playerData = yield from $this->plugin->getDataProvider()->getPlayer($player);
+        $user = yield from $this->userRepository->findByName($player->getName());
 
-        if ($playerData === null || !$this->plugin->getPasswordHasher()->verifyPassword($password, (string)($playerData['password'] ?? ''))) {
+        if ($user === null || !$this->plugin->getPasswordHasher()->verifyPassword($password, $user->getPasswordHash())) {
             throw new IncorrectPasswordException();
         }
 
         unset($this->confirmations[$lowerName]);
-        yield from $this->plugin->getDataProvider()->unregisterPlayer($player->getName());
+        yield from $this->userRepository->delete($player->getName());
         (new PlayerUnregisterEvent($player))->call();
 
         $kickMessage = (string)($this->plugin->getCustomMessages()->get("messages.unregister_success_kick") ?? "§aYour account has been successfully unregistered.");
@@ -138,12 +138,12 @@ class RegistrationService {
     }
 
     public function unregisterPlayerByAdmin(string $playerName): Generator {
-        if (!(yield from $this->plugin->getDataProvider()->isPlayerRegistered($playerName))) {
+        if (!(yield from $this->userRepository->exists($playerName))) {
             throw new NotRegisteredException();
         }
 
         $offlinePlayer = $this->plugin->getServer()->getOfflinePlayer($playerName);
-        yield from $this->plugin->getDataProvider()->unregisterPlayer($playerName);
+        yield from $this->userRepository->delete($playerName);
         (new PlayerUnregisterEvent($offlinePlayer))->call();
 
         $player = $this->plugin->getServer()->getPlayerExact($playerName);

@@ -1,7 +1,7 @@
 <?php
 
 /*
- *
+ * 
  *  _          _   _     __  __  ____ _      __  __    _         _   _
  * | |   _   _| |_| |__ |  \/  |/ ___( )___  \ \/ /   / \  _   _| |_| |__
  * | |  | | | | __| '_ \| |\/| | |   |// __|  \  /   / _ \| | | | __| '_ \
@@ -27,23 +27,30 @@ declare(strict_types=1);
 
 namespace Luthfi\XAuth\database;
 
+use InvalidArgumentException;
 use Luthfi\XAuth\Main;
 use poggit\libasynql\DataConnector;
+use poggit\libasynql\libasynql;
 
-class SqliteProvider extends AbstractDataProvider {
+class ConnectorFactory {
+    public static function create(Main $plugin, string $providerType): DataConnector {
+        $databaseConfig = $plugin->getConfig()->get('database', []);
+        
+        if (!isset($databaseConfig[$providerType])) {
+            throw new InvalidArgumentException("Configuration for '" . $providerType . "' not found in the 'database' section of config.yml");
+        }
 
-    public function __construct(Main $plugin, DataConnector $connector) {
-        parent::__construct($plugin, $connector);
-    }
-
-    public function initialize(): \Generator {
-        yield from parent::initialize();
-        yield from $this->connector->asyncGeneric('xauth.pragma.foreign_keys');
-    }
-
-    protected function getSqlMap(): array {
-        return [
-            "sqlite" => "sqlite.sql"
-        ];
+        $logQueries = (bool) ($databaseConfig['log_queries'] ?? false);
+        
+        // Prepare a specific config for libasynql without modifying the original source
+        $libasynqlConfig = $databaseConfig;
+        $libasynqlConfig['type'] = $providerType;
+        
+        return libasynql::create(
+            $plugin,
+            $libasynqlConfig,
+            [$providerType => $providerType . ".sql"],
+            $logQueries
+        );
     }
 }
