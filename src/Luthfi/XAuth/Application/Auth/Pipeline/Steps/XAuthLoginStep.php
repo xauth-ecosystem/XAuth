@@ -27,10 +27,10 @@ declare(strict_types=1);
 
 namespace Luthfi\XAuth\Application\Auth\Pipeline\Steps;
 
-use Luthfi\XAuth\Application\Auth\AuthenticationService;
-use Luthfi\XAuth\Application\Auth\Pipeline\AuthenticationFlowManager;
+use Luthfi\XAuth\Application\Auth\AuthenticationFacade;
 use Luthfi\XAuth\Application\Auth\Pipeline\AuthenticationContext;
-use Luthfi\XAuth\Application\Player\PlayerStateService;
+use Luthfi\XAuth\Application\Auth\Pipeline\Steps\AuthenticationStep;
+use Luthfi\XAuth\Application\Player\PlayerStateFacade;
 use Luthfi\XAuth\Domain\User\UserRepository;
 use Luthfi\XAuth\Infrastructure\KickTaskManager;
 use Luthfi\XAuth\Presentation\Form\FormManager;
@@ -49,8 +49,8 @@ class XAuthLoginStep implements AuthenticationStep, FinalizableStep {
         private Config $customMessages,
         private FormManager $formManager,
         private TitleService $titleService,
-        private AuthenticationService $authenticationService,
-        private PlayerStateService $playerStateService,
+        private AuthenticationFacade $authenticationService,
+        private PlayerStateFacade $playerStateService,
         private AuthenticationFlowManager $authenticationFlowManager,
         private ?UserRepository $userRepository,
         private KickTaskManager $kickTaskManager,
