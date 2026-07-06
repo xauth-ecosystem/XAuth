@@ -31,7 +31,7 @@ use Ifera\ScoreHud\event\PlayerTagUpdateEvent;
 use Ifera\ScoreHud\event\ServerTagsUpdateEvent;
 use Ifera\ScoreHud\scoreboard\ScoreTag;
 use Ifera\ScoreHud\ScoreHud;
-use Luthfi\XAuth\Application\Auth\AuthenticationService;
+use Luthfi\XAuth\Application\Auth\AuthenticationFacade;
 use Luthfi\XAuth\Domain\User\UserRepository;
 use pocketmine\plugin\PluginBase;
 use pocketmine\utils\Config;
@@ -49,11 +49,9 @@ class ScoreHudListener implements Listener {
     use SingletonTrait;
 
     private PluginBase $plugin;
-    private AuthenticationService $authenticationService;
-    private UserRepository $userRepository;
-    private Config $customMessages;
+    private AuthenticationFacade $authenticationService;
 
-    public function __construct(AuthenticationService $authenticationService, UserRepository $userRepository, Config $customMessages, PluginBase $plugin) {
+    public function __construct(AuthenticationFacade $authenticationService, UserRepository $userRepository, Config $customMessages, PluginBase $plugin) {
         $this->plugin = $plugin;
         $this->authenticationService = $authenticationService;
         $this->userRepository = $userRepository;
