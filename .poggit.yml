@@ -11,3 +11,5 @@ projects:
         version: ^3.0
       - src: jojoe77777/FormAPI/libFormAPI
         version: ^2.1.1
+      - src: newlandpe/libLanguage/libLanguage
+        version: ^0.1
