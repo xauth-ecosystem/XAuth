@@ -27,7 +27,7 @@ declare(strict_types=1);
 
 namespace Luthfi\XAuth\Presentation\Listener;
 
-use Luthfi\XAuth\Application\Auth\AuthenticationService;
+use Luthfi\XAuth\Application\Auth\AuthenticationFacade;
 use Luthfi\XAuth\Domain\Event\PlayerAuthActionEvent;
 use pocketmine\plugin\PluginBase;
 use pocketmine\utils\Config;
@@ -52,10 +52,9 @@ use pocketmine\player\Player;
 class PlayerActionListener implements Listener {
 
     private PluginBase $plugin;
-    private AuthenticationService $authenticationService;
-    private Config $customMessages;
+    private AuthenticationFacade $authenticationService;
 
-    public function __construct(PluginBase $plugin, AuthenticationService $authenticationService, Config $customMessages) {
+    public function __construct(PluginBase $plugin, AuthenticationFacade $authenticationService, Config $customMessages) {
         $this->plugin = $plugin;
         $this->authenticationService = $authenticationService;
         $this->customMessages = $customMessages;
