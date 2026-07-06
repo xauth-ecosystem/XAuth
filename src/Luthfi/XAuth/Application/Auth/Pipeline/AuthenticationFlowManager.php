@@ -33,8 +33,6 @@ use Luthfi\XAuth\Application\Auth\Pipeline\Steps\FinalizableStep;
 use Luthfi\XAuth\Application\Player\PlayerStateService;
 use Luthfi\XAuth\Domain\User\UserRepository;
 use Luthfi\XAuth\Infrastructure\KickTaskManager;
-use Luthfi\XAuth\Presentation\Form\FormManager;
-use Luthfi\XAuth\Presentation\Title\TitleService;
 use Luthfi\XAuth\Domain\Event\PlayerPreAuthenticateEvent;
 use pocketmine\player\Player;
 use pocketmine\plugin\PluginBase;
@@ -58,8 +56,6 @@ class AuthenticationFlowManager {
         private PluginBase $plugin,
         private Config $configData,
         private Config $customMessages,
-        private FormManager $formManager,
-        private TitleService $titleService,
         private PlayerStateService $playerStateService,
         private AuthenticationService $authenticationService,
         private KickTaskManager $kickTaskManager,
@@ -67,7 +63,8 @@ class AuthenticationFlowManager {
     ) {
         $flowOrder = (array)$this->configData->get("authentication-flow-order", []);
         if (empty($flowOrder)) {
-            $this->plugin->getLogger()->warning("No authentication flow order defined in config.yml. Using default XAuth login/register flow.");
+            $this->plugin->getLogger()->warning("No authentication flow order defined in config.yml. Falling back to the default 'xauth_login' -> 'xauth_register' flow.");
+            $this->orderedAuthenticationSteps = ["xauth_login", "xauth_register"];
         } else {
             $this->orderedAuthenticationSteps = $flowOrder;
             if (!in_array("xauth_login", $this->orderedAuthenticationSteps) && !in_array("xauth_register", $this->orderedAuthenticationSteps)) {
@@ -102,35 +99,6 @@ class AuthenticationFlowManager {
 
         $this->playerContexts[$playerName] = new AuthenticationContext();
         $this->playerStateService->protectPlayer($player);
-
-        // If no ordered steps are defined in config, let XAuth handle it normally
-        if (empty($this->orderedAuthenticationSteps)) {
-            Await::g2c(function() use ($player, $playerName) {
-                $this->plugin->getLogger()->debug("No authentication flow order defined. Player '{$playerName}' will proceed with default XAuth flow.");
-                // Trigger XAuth's default login/register prompt here if needed
-                $playerData = yield from $this->userRepository->findByName($player->getName());
-                $this->kickTaskManager->schedule($player);
-                $formsEnabled = $this->configData->getNested("forms.enabled", true);
-                if ($playerData !== null) {
-                    $message = (string)(((array)$this->customMessages->get("messages"))["login_prompt"] ?? "");
-                    $player->sendMessage($message);
-                    if ($formsEnabled) {
-                        $this->formManager->sendLoginForm($player);
-                    } else {
-                        $this->titleService->sendTitle($player, "login_prompt", null, true);
-                    }
-                } else {
-                    $message = (string)(((array)$this->customMessages->get("messages"))["register_prompt"] ?? "");
-                    $player->sendMessage($message);
-                    if ($formsEnabled) {
-                        $this->formManager->sendRegisterForm($player);
-                    } else {
-                        $this->titleService->sendTitle($player, "register_prompt", null, true);
-                    }
-                }
-            });
-            return;
-        }
 
         // Determine the starting step index
         $startIndex = 0;
