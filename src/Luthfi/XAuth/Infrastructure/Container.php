@@ -44,6 +44,8 @@ use Luthfi\XAuth\Application\Auth\Pipeline\AuthenticationFlowManager;
 use Luthfi\XAuth\Application\Auth\Pipeline\Steps\AutoLoginStep;
 use Luthfi\XAuth\Application\Auth\Pipeline\Steps\XAuthLoginStep;
 use Luthfi\XAuth\Application\Auth\Pipeline\Steps\XAuthRegisterStep;
+use Luthfi\XAuth\Infrastructure\Language\LanguageAdapter;
+use ChernegaSergiy\Language\PluginTranslator;
 use pocketmine\plugin\PluginBase;
 use pocketmine\utils\Config;
 
@@ -51,7 +53,7 @@ class Container {
 
     private DatabaseManager $databaseManager;
     private Config $configData;
-    private Config $languageMessages;
+    private LanguageAdapter $languageMessages;
     private PasswordPolicy $passwordPolicy;
     private PasswordHasher $passwordHasher;
     private AuthenticationFacade $authenticationService;
@@ -83,7 +85,13 @@ class Container {
 
         $this->configData = $this->plugin->getConfig();
         $language = (string)$this->configData->get("language", "en_US");
-        $this->languageMessages = new Config($this->plugin->getDataFolder() . "languages/" . $language . ".yml", Config::YAML);
+        $translator = PluginTranslator::fromDirectory(
+            $this->plugin,
+            $this->plugin->getDataFolder() . "languages",
+            null,
+            $language
+        );
+        $this->languageMessages = new LanguageAdapter($translator);
 
         // ─── Simple services (no dependencies) ───────────────────────
 
