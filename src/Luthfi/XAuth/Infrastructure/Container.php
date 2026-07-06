@@ -129,11 +129,9 @@ class Container {
         $logoutUser = new LogoutUser(
             $this->playerStateService,
             $this->visibilityManager,
-            $this->titleService,
             $this->plugin,
             $this->kickTaskManager,
             $userRepository,
-            $this->languageMessages,
         );
 
         // ─── Authentication service ──────────────────────────────────
@@ -156,12 +154,6 @@ class Container {
             $this->passwordPolicy,
         );
 
-        // ─── Resolve circular deps ───────────────────────────────────
-
-        $this->visibilityManager->setAuthenticationService($this->authenticationService);
-        $this->sessionService->setAuthenticationService($this->authenticationService);
-        $this->kickTaskManager->setAuthenticationService($this->authenticationService);
-
         // ─── Use cases with auth dependency ──────────────────────────
 
         $deleteUser = new DeleteUser($userRepository, $this->passwordHasher, $this->plugin, $this->languageMessages, $this->authenticationService);
@@ -171,20 +163,29 @@ class Container {
 
         $this->pluginControlService = new PluginControlService($this->plugin, $this->languageMessages, $this->visibilityManager);
 
-        // ─── Form manager (auth & auth-flow set via setters) ─────────
+        // ─── Authentication flow manager (no longer needs FormManager) ─
+
+        $this->authenticationFlowManager = new AuthenticationFlowManager(
+            $this->plugin,
+            $this->configData,
+            $this->languageMessages,
+            $this->playerStateService,
+            $this->authenticationService,
+            $this->kickTaskManager,
+            $userRepository,
+        );
+
+        // ─── Form manager ─────────────────────────────────────────────
 
         $this->formManager = new FormManager(
             $this->plugin,
             $this->languageMessages,
             $this->configData,
             $this->registrationService,
+            $this->authenticationService,
+            $this->authenticationFlowManager,
+            $this->titleService,
         );
-
-        // ─── Wire remaining circular deps ────────────────────────────
-
-        $this->authenticationService->setFormManager($this->formManager);
-        $logoutUser->setFormManager($this->formManager);
-        $this->formManager->setAuthenticationService($this->authenticationService);
 
         // ─── Config version check ────────────────────────────────────
 
@@ -257,9 +258,9 @@ class Container {
         $this->plugin->getServer()->getCommandMap()->register("register", new RegisterCommand($this->registrationService, $this->authenticationFlowManager, $this->languageMessages, $this->plugin));
         $this->plugin->getServer()->getCommandMap()->register("login", new LoginCommand($this->authenticationService, $this->authenticationFlowManager, $this->languageMessages, $this->plugin));
         $this->plugin->getServer()->getCommandMap()->register("resetpassword", new ResetPasswordCommand($this->authenticationService, $this->formManager, $this->languageMessages, $this->plugin));
-        $this->plugin->getServer()->getCommandMap()->register("logout", new LogoutCommand($this->authenticationService, $this->languageMessages, $this->plugin));
+        $this->plugin->getServer()->getCommandMap()->register("logout", new LogoutCommand($this->authenticationService, $this->formManager, $this->languageMessages, $this->plugin));
         $this->plugin->getServer()->getCommandMap()->register("unregister", new UnregisterCommand($this->authenticationService, $this->registrationService, $this->languageMessages, $this->plugin));
-        $this->plugin->getServer()->getCommandMap()->register("xauth", new XAuthCommand($this->authenticationService, $this->registrationService, $this->sessionService, $this->pluginControlService, $this->migrationManager, $this->languageMessages, $this->plugin));
+        $this->plugin->getServer()->getCommandMap()->register("xauth", new XAuthCommand($this->authenticationService, $this->registrationService, $this->sessionService, $this->pluginControlService, $this->migrationManager, $this->formManager, $this->languageMessages, $this->plugin));
     }
 
     private function checkConfigVersion(): void {
@@ -271,20 +272,6 @@ class Container {
     }
 
     private function bootFlow(): void {
-        $this->authenticationFlowManager = new AuthenticationFlowManager(
-            $this->plugin,
-            $this->configData,
-            $this->languageMessages,
-            $this->formManager,
-            $this->titleService,
-            $this->playerStateService,
-            $this->authenticationService,
-            $this->kickTaskManager,
-            $this->databaseManager?->getUserRepository(),
-        );
-
-        $this->formManager->setAuthenticationFlowManager($this->authenticationFlowManager);
-
         $this->authenticationFlowManager->registerAuthenticationStep(new AutoLoginStep(
             $this->plugin,
             $this->configData,
