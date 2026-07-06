@@ -56,13 +56,13 @@ class AutoLoginStep implements AuthenticationStep, FinalizableStep {
                 $securityLevel = (int)($autoLoginConfig["security_level"] ?? 1);
 
                 foreach ($sessions as $sessionData) {
-                    if (($sessionData['expiration_time'] ?? 0) <= time()) {
+                    if ($sessionData->isExpired()) {
                         continue;
                     }
 
-                    $ipMatch = ($sessionData['ip_address'] ?? '') === $ip;
+                    $ipMatch = $sessionData->getIpAddress() === $ip;
                     $deviceId = $this->plugin->deviceIds[strtolower($playerName)] ?? null;
-                    $deviceIdMatch = ($sessionData['device_id'] ?? null) === $deviceId;
+                    $deviceIdMatch = $sessionData->getDeviceId()->value() === $deviceId;
 
                     if (($securityLevel === 1 && $ipMatch && $deviceIdMatch) || ($securityLevel === 0 && $ipMatch)) {
                         $this->plugin->getAuthenticationFlowManager()->getContextForPlayer($player)->setLoginType(PlayerPreAuthenticateEvent::LOGIN_TYPE_AUTO);

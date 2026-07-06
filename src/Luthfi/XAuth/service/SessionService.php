@@ -1,33 +1,12 @@
 <?php
 
-/*
- *
- *  _          _   _     __  __  ____ _      __  __    _         _   _
- * | |   _   _| |_| |__ |  \/  |/ ___( )___  \ \/ /   / \  _   _| |_| |__
- * | |  | | | | __| '_ \| |\/| | |   |// __|  \  /   / _ \| | | | __| '_ \
- * | |__| |_| | |_| | | | |  | | |___  \__ \  /  \  / ___ \ |_| | |_| | | |
- * |_____\__,_|\__|_| |_|_|  |_|\____| |___/ /_/\_\/_/   \_\__,_|\__|_| |_|
- *
- * This program is free software: you can redistribute and/or modify
- * it under the terms of the CSSM Unlimited License v2.0.
- *
- * This license permits unlimited use, modification, and distribution
- * for any purpose while maintaining authorship attribution.
- *
- * The software is provided "as is" without warranty of any kind.
- *
- * @author LuthMC
- * @author Sergiy Chernega
- * @link https://chernega.eu.org/
- *
- *
- */
-
 declare(strict_types=1);
 
 namespace Luthfi\XAuth\service;
 
 use Generator;
+use Luthfi\XAuth\Domain\Session\Session;
+use Luthfi\XAuth\Domain\Session\SessionId;
 use Luthfi\XAuth\Main;
 use Luthfi\XAuth\repository\SessionRepository;
 use pocketmine\player\Player;
@@ -58,9 +37,10 @@ class SessionService {
         $refreshSession = (bool)($autoLoginConfig['refresh_session_on_login'] ?? true);
 
         $existingSessionId = null;
+        /** @var Session $sessionData */
         foreach ($sessions as $sessionId => $sessionData) {
-            $ipMatch = ($sessionData['ip_address'] ?? '') === $ip;
-            $deviceIdMatch = ($sessionData['device_id'] ?? null) === $deviceId;
+            $ipMatch = $sessionData->getIpAddress() === $ip;
+            $deviceIdMatch = $sessionData->getDeviceId()->value() === $deviceId;
 
             if (($securityLevel === 1 && $ipMatch && $deviceIdMatch) || ($securityLevel === 0 && $ipMatch)) {
                 $existingSessionId = $sessionId;
@@ -69,32 +49,29 @@ class SessionService {
         }
 
         if ($existingSessionId !== null) {
-            $expiration = (int)($sessions[$existingSessionId]['expiration_time'] ?? 0);
-            if ($expiration > time()) {
-                // Session is valid, just refresh it.
-                // Note: Authentication is already done before calling this method in finalizeAuthentication.
-                
+            /** @var Session $existingSession */
+            $existingSession = $sessions[$existingSessionId];
+            if (!$existingSession->isExpired()) {
                 if ($refreshSession) {
                     yield from $this->sessionRepository->refresh($existingSessionId, $lifetime);
                 } else {
                     yield from $this->sessionRepository->updateLastActivity($existingSessionId);
                 }
-                
+
                 $player->sendMessage((string)($this->plugin->getCustomMessages()->get("messages.auto_login_success") ?? "§aAuto-logged in successfully."));
             } else {
                 yield from $this->sessionRepository->delete($existingSessionId);
-                // Session expired, create new one below
                 $existingSessionId = null;
             }
         }
-        
+
         if ($existingSessionId === null) {
             $maxSessions = (int)($autoLoginConfig["max_sessions_per_player"] ?? 5);
             if ($maxSessions > 0) {
                 $currentSessions = yield from $this->sessionRepository->findAllByPlayer($player->getName());
                 if (count($currentSessions) >= $maxSessions) {
-                    uasort($currentSessions, function($a, $b) {
-                        return ($a['login_time'] ?? 0) <=> ($b['login_time'] ?? 0);
+                    uasort($currentSessions, function(Session $a, Session $b) {
+                        return $a->getLoginTime() <=> $b->getLoginTime();
                     });
                     $sessionsToDeleteCount = count($currentSessions) - $maxSessions + 1;
                     $sessionsToDelete = array_slice(array_keys($currentSessions), 0, $sessionsToDeleteCount);
@@ -119,7 +96,7 @@ class SessionService {
 
         yield from $this->sessionRepository->delete($sessionId);
 
-        $playerName = (string)($session['player_name'] ?? '');
+        $playerName = $session->getPlayerName()->value();
         $player = $this->plugin->getServer()->getPlayerExact($playerName);
         if ($player !== null && $this->plugin->getAuthenticationService()->isPlayerAuthenticated($player)) {
             yield from $this->plugin->getAuthenticationService()->handleLogout($player);

@@ -356,8 +356,8 @@ class AuthenticationService {
             $sessions = yield from $this->sessionRepository->findAllByPlayer($playerName);
             if (!empty($sessions)) {
                 $latestSession = current($sessions);
-                $lastLoginIp = (string)($latestSession['ip_address'] ?? "N/A");
-                $lastLoginTime = (isset($latestSession["login_time"])) ? date("Y-m-d H:i:s", (int)$latestSession["login_time"]) : "N/A";
+                $lastLoginIp = $latestSession->getIpAddress();
+                $lastLoginTime = date("Y-m-d H:i:s", $latestSession->getLoginTime());
             }
         } else {
             $lastLoginIp = $playerData->getIp();

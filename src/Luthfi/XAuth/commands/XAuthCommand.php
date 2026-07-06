@@ -276,9 +276,10 @@ class XAuthCommand extends Command implements PluginOwned {
                                 }
                                 $outputLines = [str_replace(["{player_name}", "{count}"], [$playerName, (string)count($sessions)], (string)($messages["xauth_sessions_list_header"] ?? "§e--- Sessions for {player_name} ({count}) ---" ))];
                                 foreach ($sessions as $sessionId => $session) {
+                                    $sessionIdStr = $session->getSessionId()->value();
                                     $outputLines[] = str_replace(
                                         ['{session_id}', '{ip_address}', '{login_time}', '{last_activity}', '{expiration_time}'],
-                                        [$sessionId, (string)($session['ip_address'] ?? 'N/A' ), date("Y-m-d H:i:s", (int)($session['login_time'] ?? 0 )), date("Y-m-d H:i:s", (int)($session['last_activity'] ?? 0 )), date("Y-m-d H:i:s", (int)($session['expiration_time'] ?? 0 ))],
+                                        [$sessionIdStr, $session->getIpAddress(), date("Y-m-d H:i:s", $session->getLoginTime()), date("Y-m-d H:i:s", $session->getLastActivity()), date("Y-m-d H:i:s", $session->getExpirationTime())],
                                         (string)($messages['xauth_sessions_list_entry'] ?? "ID: {session_id} | IP: {ip_address} | Login: {login_time} | Last Activity: {last_activity} | Expires: {expiration_time}" )
                                     );
                                 }

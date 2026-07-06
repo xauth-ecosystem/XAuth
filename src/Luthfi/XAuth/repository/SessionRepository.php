@@ -5,6 +5,10 @@ declare(strict_types=1);
 namespace Luthfi\XAuth\repository;
 
 use Generator;
+use Luthfi\XAuth\Domain\Session\DeviceId;
+use Luthfi\XAuth\Domain\Session\Session;
+use Luthfi\XAuth\Domain\Session\SessionId;
+use Luthfi\XAuth\Domain\User\Username;
 use Luthfi\XAuth\Main;
 use Luthfi\XAuth\database\Queries;
 use poggit\libasynql\DataConnector;
@@ -18,13 +22,13 @@ class SessionRepository {
     ) {}
 
     public function create(string $username, string $ip, string $deviceId, int $lifetimeSeconds): Generator {
-        $sessionId = bin2hex(random_bytes(16));
+        $sessionId = SessionId::generate();
         $loginTime = time();
         $expirationTime = $loginTime + $lifetimeSeconds;
 
         try {
             yield from $this->connector->asyncInsert(Queries::SESSIONS_CREATE, [
-                'session_id' => $sessionId,
+                'session_id' => $sessionId->value(),
                 'player_name' => strtolower($username),
                 'ip_address' => $ip,
                 'device_id' => $deviceId,
@@ -33,7 +37,15 @@ class SessionRepository {
                 'expiration_time' => $expirationTime
             ]);
             $this->plugin->getLogger()->debug("Session {$sessionId} created for player {$username}.");
-            return $sessionId;
+            return new Session(
+                $sessionId,
+                Username::fromString($username),
+                $ip,
+                DeviceId::fromString($deviceId),
+                $loginTime,
+                $loginTime,
+                $expirationTime
+            );
         } catch (SqlError $error) {
             $this->plugin->getLogger()->error("Failed to create session for player {$username}: " . $error->getMessage());
             return null;
@@ -46,7 +58,19 @@ class SessionRepository {
                 'session_id' => $sessionId,
                 'current_time' => time()
             ]);
-            return count($rows) > 0 ? $rows[0] : null;
+            if (count($rows) > 0) {
+                $row = $rows[0];
+                return new Session(
+                    SessionId::fromString((string)($row['session_id'] ?? '')),
+                    Username::fromString((string)($row['player_name'] ?? '')),
+                    (string)($row['ip_address'] ?? ''),
+                    DeviceId::fromString((string)($row['device_id'] ?? '')),
+                    (int)($row['login_time'] ?? 0),
+                    (int)($row['last_activity'] ?? 0),
+                    (int)($row['expiration_time'] ?? 0)
+                );
+            }
+            return null;
         } catch (SqlError $error) {
             $this->plugin->getLogger()->error("Failed to get session {$sessionId}: " . $error->getMessage());
             return null;
@@ -62,7 +86,16 @@ class SessionRepository {
             ]);
             $sessions = [];
             foreach ($rows as $row) {
-                $sessions[$row['session_id']] = $row;
+                $session = new Session(
+                    SessionId::fromString((string)($row['session_id'] ?? '')),
+                    Username::fromString((string)($row['player_name'] ?? '')),
+                    (string)($row['ip_address'] ?? ''),
+                    DeviceId::fromString((string)($row['device_id'] ?? '')),
+                    (int)($row['login_time'] ?? 0),
+                    (int)($row['last_activity'] ?? 0),
+                    (int)($row['expiration_time'] ?? 0)
+                );
+                $sessions[$session->getSessionId()->value()] = $session;
             }
             return $sessions;
         } catch (SqlError $error) {
