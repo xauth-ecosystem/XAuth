@@ -74,5 +74,7 @@ class DeleteUser {
             yield from $this->authenticationService->handleLogout($player);
             $player->sendMessage((string)(($this->customMessages->get("messages"))["account_unregistered_by_admin"] ?? "§eYour account has been unregistered by an administrator. Please register again."));
         }
+
+        return $player;
     }
 }
