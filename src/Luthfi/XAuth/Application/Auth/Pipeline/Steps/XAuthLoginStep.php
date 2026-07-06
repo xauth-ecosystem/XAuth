@@ -25,10 +25,10 @@
 
 declare(strict_types=1);
 
-namespace Luthfi\XAuth\steps;
+namespace Luthfi\XAuth\Application\Auth\Pipeline\Steps;
 
 use Luthfi\XAuth\event\PlayerAuthenticateEvent;
-use Luthfi\XAuth\flow\AuthenticationContext;
+use Luthfi\XAuth\Application\Auth\Pipeline\AuthenticationContext;
 use Luthfi\XAuth\Main;
 use pocketmine\player\Player;
 use SOFe\AwaitGenerator\Await;

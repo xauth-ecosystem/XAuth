@@ -25,12 +25,12 @@
 
 declare(strict_types=1);
 
-namespace Luthfi\XAuth\flow;
+namespace Luthfi\XAuth\Application\Auth\Pipeline;
 
 use Luthfi\XAuth\event\PlayerPreAuthenticateEvent;
 use Luthfi\XAuth\Main;
-use Luthfi\XAuth\steps\AuthenticationStep;
-use Luthfi\XAuth\steps\FinalizableStep;
+use Luthfi\XAuth\Application\Auth\Pipeline\Steps\AuthenticationStep;
+use Luthfi\XAuth\Application\Auth\Pipeline\Steps\FinalizableStep;
 use pocketmine\player\Player;
 use SOFe\AwaitGenerator\Await;
 

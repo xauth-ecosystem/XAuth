@@ -25,7 +25,7 @@
 
 declare(strict_types=1);
 
-namespace Luthfi\XAuth\flow;
+namespace Luthfi\XAuth\Application\Auth\Pipeline;
 
 class AuthenticationContext {
 

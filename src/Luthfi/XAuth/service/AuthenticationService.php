@@ -13,7 +13,7 @@ use Luthfi\XAuth\event\PlayerAuthenticateEvent;
 use Luthfi\XAuth\event\PlayerDeauthenticateEvent;
 use Luthfi\XAuth\exception\AlreadyLoggedInException;
 use Luthfi\XAuth\exception\NotRegisteredException;
-use Luthfi\XAuth\flow\AuthenticationContext;
+use Luthfi\XAuth\Application\Auth\Pipeline\AuthenticationContext;
 use Luthfi\XAuth\FormManager;
 use Luthfi\XAuth\Main;
 use Luthfi\XAuth\PasswordHasher;

@@ -25,17 +25,14 @@
 
 declare(strict_types=1);
 
-namespace Luthfi\XAuth\steps;
+namespace Luthfi\XAuth\Application\Auth\Pipeline\Steps;
 
-use Luthfi\XAuth\flow\AuthenticationContext;
 use pocketmine\player\Player;
 
-interface FinalizableStep {
+interface AuthenticationStep {
 
-    /**
-     * @param Player $player The player who completed the authentication flow.
-     * @param AuthenticationContext $context The context containing information
-     *                                     about all completed and skipped steps.
-     */
-    public function onFlowComplete(Player $player, AuthenticationContext $context): void;
+    public function getId(): string;
+    public function start(Player $player): void;
+    public function complete(Player $player): void;
+    public function skip(Player $player): void;
 }
