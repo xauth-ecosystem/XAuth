@@ -27,10 +27,9 @@ declare(strict_types=1);
 
 namespace Luthfi\XAuth\Presentation\Command;
 
-use Luthfi\XAuth\Application\Auth\AuthenticationService;
-use Luthfi\XAuth\Application\Auth\LogoutOutcome;
-use Luthfi\XAuth\Application\Session\SessionService;
-use Luthfi\XAuth\Application\User\RegistrationService;
+use Luthfi\XAuth\Application\Auth\AuthenticationFacade;
+use Luthfi\XAuth\Application\Session\SessionFacade;
+use Luthfi\XAuth\Application\User\RegistrationFacade;
 use Luthfi\XAuth\Domain\Exception\NotRegisteredException;
 use Luthfi\XAuth\Infrastructure\MigrationManager;
 use Luthfi\XAuth\Infrastructure\PluginControlService;
@@ -50,9 +49,9 @@ class XAuthCommand extends Command implements PluginOwned {
     use PluginOwnedTrait;
 
     public function __construct(
-        private readonly AuthenticationService $authenticationService,
-        private readonly RegistrationService $registrationService,
-        private readonly SessionService $sessionService,
+        private readonly AuthenticationFacade $authenticationService,
+        private readonly RegistrationFacade $registrationService,
+        private readonly SessionFacade $sessionService,
         private readonly PluginControlService $pluginControlService,
         private readonly MigrationManager $migrationManager,
         private readonly FormManager $formManager,
