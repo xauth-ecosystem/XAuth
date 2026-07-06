@@ -45,6 +45,7 @@ use Luthfi\XAuth\Application\Auth\Pipeline\Steps\AutoLoginStep;
 use Luthfi\XAuth\Application\Auth\Pipeline\Steps\XAuthLoginStep;
 use Luthfi\XAuth\Application\Auth\Pipeline\Steps\XAuthRegisterStep;
 use Luthfi\XAuth\Infrastructure\Language\LanguageAdapter;
+use ChernegaSergiy\Language\TranslatorInterface;
 use ChernegaSergiy\Language\PluginTranslator;
 use pocketmine\plugin\PluginBase;
 use pocketmine\utils\Config;
@@ -53,7 +54,7 @@ class Container {
 
     private DatabaseManager $databaseManager;
     private Config $configData;
-    private LanguageAdapter $languageMessages;
+    private TranslatorInterface $languageMessages;
     private PasswordPolicy $passwordPolicy;
     private PasswordHasher $passwordHasher;
     private AuthenticationFacade $authenticationService;
@@ -85,13 +86,12 @@ class Container {
 
         $this->configData = $this->plugin->getConfig();
         $language = (string)$this->configData->get("language", "en_US");
-        $translator = PluginTranslator::fromDirectory(
+        $this->languageMessages = PluginTranslator::fromDirectory(
             $this->plugin,
             $this->plugin->getDataFolder() . "languages",
             null,
             $language
         );
-        $this->languageMessages = new LanguageAdapter($translator);
 
         // ─── Simple services (no dependencies) ───────────────────────
 
@@ -274,7 +274,12 @@ class Container {
     private function checkConfigVersion(): void {
         $currentVersion = (float)$this->configData->get("config-version", 1.0);
         if ($currentVersion < 1.0) {
-            $message = (string)(((array)$this->languageMessages->get("messages"))["config_outdated_warning"]);
+            $message = $this->languageMessages->translate(
+                $this->languageMessages->getDefaultLocale(),
+                "messages.config_outdated_warning",
+                [],
+                null
+            );
             $this->plugin->getLogger()->warning($message);
         }
     }
