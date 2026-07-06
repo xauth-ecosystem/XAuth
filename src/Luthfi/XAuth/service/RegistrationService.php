@@ -125,7 +125,7 @@ class RegistrationService {
 
         $user = yield from $this->userRepository->findByName($player->getName());
 
-        if ($user === null || !$this->plugin->getPasswordHasher()->verifyPassword($password, $user->getPasswordHash())) {
+        if ($user === null || !$this->plugin->getPasswordHasher()->verifyPassword($password, $user->getPasswordHash()->value())) {
             throw new IncorrectPasswordException();
         }
 

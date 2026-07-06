@@ -138,7 +138,7 @@ class AuthenticationService {
             throw new AccountLockedException();
         }
 
-        $storedPasswordHash = $playerData->getPasswordHash();
+        $storedPasswordHash = $playerData->getPasswordHash()->value();
 
         if (!$this->passwordHasher->verifyPassword($password, $storedPasswordHash)) {
             yield from $this->loginThrottler->logFailure($player);
@@ -159,7 +159,7 @@ class AuthenticationService {
             throw new NotRegisteredException();
         }
 
-        $currentHashedPassword = $playerData->getPasswordHash();
+        $currentHashedPassword = $playerData->getPasswordHash()->value();
 
         if (!$this->passwordHasher->verifyPassword($oldPassword, $currentHashedPassword)) {
             throw new IncorrectPasswordException();
@@ -190,7 +190,7 @@ class AuthenticationService {
             throw new NotRegisteredException();
         }
 
-        $currentHashedPassword = $playerData->getPasswordHash();
+        $currentHashedPassword = $playerData->getPasswordHash()->value();
 
         if (!$this->passwordHasher->verifyPassword($oldPassword, $currentHashedPassword)) {
             throw new IncorrectPasswordException();
@@ -336,7 +336,7 @@ class AuthenticationService {
             throw new NotRegisteredException();
         }
 
-        $storedHash = $playerData->getPasswordHash();
+        $storedHash = $playerData->getPasswordHash()->value();
         return $this->passwordHasher->verifyPassword($password, $storedHash);
     }
 

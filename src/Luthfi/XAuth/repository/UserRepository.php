@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Luthfi\XAuth\repository;
 
 use Generator;
-use Luthfi\XAuth\entity\User;
+use Luthfi\XAuth\Domain\User\User as DomainUser;
+use Luthfi\XAuth\Domain\User\Username;
+use Luthfi\XAuth\Domain\User\PasswordHash;
 use Luthfi\XAuth\Main;
 use Luthfi\XAuth\database\Queries;
 use pocketmine\player\OfflinePlayer;
@@ -25,7 +27,20 @@ class UserRepository {
         $name = strtolower($username);
         try {
             $rows = yield from $this->connector->asyncSelect(Queries::PLAYERS_GET, ['name' => $name]);
-            return count($rows) > 0 ? User::fromArray($rows[0]) : null;
+            if (count($rows) > 0) {
+                $row = $rows[0];
+                return new DomainUser(
+                    Username::fromString((string)($row['name'] ?? '')),
+                    PasswordHash::fromString((string)($row['password'] ?? '')),
+                    (string)($row['ip'] ?? ''),
+                    (int)($row['registered_at'] ?? 0),
+                    (int)($row['last_login_at'] ?? 0),
+                    (bool)($row['locked'] ?? false),
+                    (int)($row['blocked_until'] ?? 0),
+                    (bool)($row['must_change_password'] ?? false)
+                );
+            }
+            return null;
         } catch (SqlError $error) {
             $this->plugin->getLogger()->error("Failed to get player data for {$name}: " . $error->getMessage());
             return null;
