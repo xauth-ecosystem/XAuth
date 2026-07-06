@@ -17,10 +17,10 @@ use Luthfi\XAuth\Domain\Exception\NotRegisteredException;
 use Luthfi\XAuth\Application\Auth\Pipeline\AuthenticationContext;
 use Luthfi\XAuth\Domain\User\PasswordPolicy;
 use Luthfi\XAuth\Infrastructure\KickTaskManager;
-use Luthfi\XAuth\Application\Player\PlayerStateService;
-use Luthfi\XAuth\Application\Session\SessionService;
+use Luthfi\XAuth\Application\Player\PlayerStateFacade;
+use Luthfi\XAuth\Application\Session\SessionFacade;
 use Luthfi\XAuth\Domain\Auth\LoginRateLimiter;
-use Luthfi\XAuth\Domain\Player\VisibilityManager;
+use Luthfi\XAuth\Infrastructure\VisibilityManager;
 use Luthfi\XAuth\Domain\User\PasswordHasher;
 use Luthfi\XAuth\Domain\Session\SessionRepository;
 use Luthfi\XAuth\Domain\User\UserRepository;
@@ -30,13 +30,13 @@ use pocketmine\player\Player;
 use pocketmine\plugin\PluginBase;
 use pocketmine\Server;
 
-class AuthenticationService {
+class AuthenticationFacade {
 
     private UserRepository $userRepository;
     private SessionRepository $sessionRepository;
     private PasswordHasher $passwordHasher;
-    private SessionService $sessionService;
-    private PlayerStateService $playerStateService;
+    private SessionFacade $sessionService;
+    private PlayerStateFacade $playerStateService;
     private VisibilityManager $playerVisibilityService;
     private TitleService $titleManager;
     private LoginRateLimiter $loginThrottler;
@@ -56,8 +56,8 @@ class AuthenticationService {
         UserRepository $userRepository,
         SessionRepository $sessionRepository,
         PasswordHasher $passwordHasher,
-        SessionService $sessionService,
-        PlayerStateService $playerStateService,
+        SessionFacade $sessionService,
+        PlayerStateFacade $playerStateService,
         VisibilityManager $playerVisibilityService,
         TitleService $titleManager,
         LoginRateLimiter $loginThrottler,
