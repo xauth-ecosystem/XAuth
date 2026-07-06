@@ -27,10 +27,10 @@ declare(strict_types=1);
 
 namespace Luthfi\XAuth\Application\Auth\Pipeline;
 
-use Luthfi\XAuth\Application\Auth\AuthenticationService;
+use Luthfi\XAuth\Application\Auth\AuthenticationFacade;
 use Luthfi\XAuth\Application\Auth\Pipeline\Steps\AuthenticationStep;
 use Luthfi\XAuth\Application\Auth\Pipeline\Steps\FinalizableStep;
-use Luthfi\XAuth\Application\Player\PlayerStateService;
+use Luthfi\XAuth\Application\Player\PlayerStateFacade;
 use Luthfi\XAuth\Domain\User\UserRepository;
 use Luthfi\XAuth\Infrastructure\KickTaskManager;
 use Luthfi\XAuth\Domain\Event\PlayerPreAuthenticateEvent;
@@ -56,8 +56,8 @@ class AuthenticationFlowManager {
         private PluginBase $plugin,
         private Config $configData,
         private Config $customMessages,
-        private PlayerStateService $playerStateService,
-        private AuthenticationService $authenticationService,
+        private PlayerStateFacade $playerStateService,
+        private AuthenticationFacade $authenticationService,
         private KickTaskManager $kickTaskManager,
         private ?UserRepository $userRepository,
     ) {
