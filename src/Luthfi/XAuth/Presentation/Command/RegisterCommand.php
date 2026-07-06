@@ -99,7 +99,7 @@ class RegisterCommand extends Command implements PluginOwned {
                         $sender->sendMessage((string)($messages["account_locked_by_admin"] ?? "§cYour account has been locked by an administrator."));
                         break;
                     case $e instanceof RegistrationRateLimitException:
-                        $sender->sendMessage((string)($messages["registration_ip_limit_reached"] ?? "§cYou have reached the maximum number of registrations for your IP address."));
+                        $sender->sendMessage((string)($messages["registration_ip_limit_reached"]));
                         break;
                     case $e instanceof PasswordMismatchException:
                         $sender->sendMessage((string)($messages["password_mismatch"] ?? "§cPasswords do not match."));

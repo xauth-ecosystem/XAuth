@@ -266,7 +266,7 @@ class Container {
     private function checkConfigVersion(): void {
         $currentVersion = (float)$this->configData->get("config-version", 1.0);
         if ($currentVersion < 1.0) {
-            $message = (string)(((array)$this->languageMessages->get("messages"))["config_outdated_warning"] ?? "Your config.yml is outdated! Please update it to the latest version.");
+            $message = (string)(((array)$this->languageMessages->get("messages"))["config_outdated_warning"]);
             $this->plugin->getLogger()->warning($message);
         }
     }

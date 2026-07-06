@@ -122,7 +122,7 @@ class PlayerActionListener implements Listener {
 
         $this->handleAction($player, PlayerAuthActionEvent::ACTION_CHAT, $event);
         if ($event->isCancelled()) {
-            $message = (string)(((array)$this->customMessages->get("messages"))["chat_not_allowed"] ?? "");
+            $message = (string)(((array)$this->customMessages->get("messages"))["chat_not_allowed"]);
             if (!empty($message)) {
                 $player->sendMessage($message);
             }
@@ -136,7 +136,7 @@ class PlayerActionListener implements Listener {
         }
 
         if ($this->authenticationService->isForcingPasswordChange($player)) {
-            $message = (string)(((array)$this->customMessages->get("messages"))["force_change_password_prompt"] ?? "");
+            $message = (string)(((array)$this->customMessages->get("messages"))["force_change_password_prompt"]);
             if (!empty($message)) {
                 $player->sendMessage($message);
             }
@@ -162,7 +162,7 @@ class PlayerActionListener implements Listener {
             return; // Allow other plugins to handle it
         }
 
-        $message = (string)(((array)$this->customMessages->get("messages"))["command_not_allowed"] ?? "");
+        $message = (string)(((array)$this->customMessages->get("messages"))["command_not_allowed"]);
         if (!empty($message)) {
             $player->sendMessage($message);
         }

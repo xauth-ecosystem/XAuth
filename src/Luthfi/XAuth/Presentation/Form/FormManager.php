@@ -70,14 +70,14 @@ class FormManager {
         $formsEnabled = (bool)($this->configData->getNested("forms.enabled") ?? true);
 
         if ($outcome === LogoutOutcome::EXISTING_USER) {
-            $player->sendMessage((string)($messages["login_prompt"] ?? ""));
+            $player->sendMessage((string)($messages["login_prompt"]));
             if ($formsEnabled) {
                 $this->sendLoginForm($player);
             } else {
                 $this->titleService->sendTitle($player, "login_prompt", null, true);
             }
         } else {
-            $player->sendMessage((string)($messages["register_prompt"] ?? ""));
+            $player->sendMessage((string)($messages["register_prompt"]));
             if ($formsEnabled) {
                 $this->sendRegisterForm($player);
             } else {
@@ -168,7 +168,7 @@ class FormManager {
             if ($rulesToggleEnabled) {
                 $rulesAccepted = (bool)($data["rules_accepted"] ?? false);
                 if (!$rulesAccepted) {
-                    $this->sendRegisterForm($player, (string)($messages["form_register_rules_not_accepted"] ?? "§cYou must accept the server rules to register."));
+                    $this->sendRegisterForm($player, (string)($messages["form_register_rules_not_accepted"]));
                     return;
                 }
             }
@@ -215,11 +215,11 @@ class FormManager {
         }
         $rulesToggleEnabled = (bool)($this->configData->getNested("forms.register.rules_toggle.enabled") ?? false);
         if ($rulesToggleEnabled) {
-            $rulesText = (string)($this->customMessages->getNested("forms.register.rules_text") ?? "");
+            $rulesText = (string)($this->customMessages->getNested("forms.register.rules_text"));
             if (!empty($rulesText)) {
                 $form->addLabel($rulesText);
             }
-            $form->addToggle((string)($this->customMessages->getNested("forms.register.rules_toggle_label") ?? "I accept the server rules"), false, "rules_accepted");
+            $form->addToggle((string)($this->customMessages->getNested("forms.register.rules_toggle_label")), false, "rules_accepted");
         }
         $form->addInput((string)($registerFormConfig["password_label"] ?? "Password"), (string)($registerFormConfig["password_placeholder"] ?? ""), null, "password");
         $form->addInput((string)($registerFormConfig["confirm_password_label"] ?? "Confirm Password"), (string)($registerFormConfig["confirm_password_placeholder"] ?? ""), null, "confirm_password");

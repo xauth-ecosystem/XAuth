@@ -100,7 +100,7 @@ class AutoLoginStep implements AuthenticationStep, FinalizableStep {
     public function onFlowComplete(Player $player, AuthenticationContext $context): void {
         if ($context->wasStepCompleted($this->getId())) {
             $messages = (array)$this->customMessages->get("messages");
-            $player->sendMessage((string)($messages["auto_login_success"] ?? "§aYou have been automatically logged in."));
+            $player->sendMessage((string)($messages["auto_login_success"]));
             $this->titleService->sendTitle($player, "auto_login_success", 2 * 20);
         }
     }

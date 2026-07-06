@@ -73,7 +73,7 @@ class XAuthRegisterStep implements AuthenticationStep, FinalizableStep {
                 $this->playerStateService->protectPlayer($player);
                 $this->kickTaskManager->schedule($player);
                 $formsEnabled = $this->configData->getNested("forms.enabled", true);
-                $message = (string)(((array)$this->customMessages->get("messages"))["register_prompt"] ?? "");
+                $message = (string)(((array)$this->customMessages->get("messages"))["register_prompt"]);
                 $player->sendMessage($message);
                 if ($formsEnabled) {
                     $this->formManager->sendRegisterForm($player);

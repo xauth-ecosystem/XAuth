@@ -76,7 +76,7 @@ class PlayerSessionListener implements Listener {
             }
 
             if (isset($ipCounts[$ip]) && $ipCounts[$ip] >= $maxJoinsPerIp) {
-                $message = (string)(((array)$this->customMessages->get("messages"))["ip_join_limit_exceeded"] ?? "Connection limit exceeded for your IP address.");
+                $message = (string)(((array)$this->customMessages->get("messages"))["ip_join_limit_exceeded"]);
                 $event->setKickFlag(PlayerPreLoginEvent::KICK_FLAG_BANNED, $message);
                 return;
             }

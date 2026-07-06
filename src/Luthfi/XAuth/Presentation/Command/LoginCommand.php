@@ -65,12 +65,12 @@ class LoginCommand extends Command implements PluginOwned {
 
     public function execute(CommandSender $sender, string $label, array $args): bool {
         if (!$sender instanceof Player) {
-            $sender->sendMessage((string)($this->customMessages->get("messages.command_only_in_game") ?? "§cThis command can only be used in-game."));
+            $sender->sendMessage((string)($this->customMessages->get("messages.command_only_in_game")));
             return false;
         }
 
         if (count($args) !== 1) {
-            $sender->sendMessage((string)($this->customMessages->get("messages.login_usage") ?? "§cUsage: /login <password>"));
+            $sender->sendMessage((string)($this->customMessages->get("messages.login_usage")));
             return false;
         }
 

@@ -73,7 +73,7 @@ class XAuthLoginStep implements AuthenticationStep, FinalizableStep {
                 $this->playerStateService->protectPlayer($player);
                 $this->kickTaskManager->schedule($player);
                 $formsEnabled = $this->configData->getNested("forms.enabled", true);
-                $message = (string)(((array)$this->customMessages->get("messages"))["login_prompt"] ?? "");
+                $message = (string)(((array)$this->customMessages->get("messages"))["login_prompt"]);
                 $player->sendMessage($message);
                 if ($formsEnabled) {
                     $this->formManager->sendLoginForm($player);
@@ -97,7 +97,7 @@ class XAuthLoginStep implements AuthenticationStep, FinalizableStep {
     public function onFlowComplete(Player $player, AuthenticationContext $context): void {
         if ($context->wasStepCompleted($this->getId())) {
             $messages = (array)$this->customMessages->get("messages");
-            $player->sendMessage((string)($messages["login_success"] ?? ""));
+            $player->sendMessage((string)($messages["login_success"]));
             $this->titleService->sendTitle($player, "login_success", 2 * 20);
         }
     }
