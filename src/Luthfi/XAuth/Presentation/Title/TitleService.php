@@ -4,32 +4,32 @@ declare(strict_types=1);
 
 namespace Luthfi\XAuth\Presentation\Title;
 
-use Luthfi\XAuth\Main;
 use Luthfi\XAuth\Infrastructure\Scheduler\SendTitleTask;
 use pocketmine\player\Player;
+use pocketmine\plugin\PluginBase;
 use pocketmine\scheduler\TaskHandler;
+use pocketmine\utils\Config;
 
 class TitleService 
 {
-    private Main $plugin;
-    
     /** @var array<string, TaskHandler> */
     private array $titleTasks = [];
 
-    public function __construct(Main $plugin) 
-    {
-        $this->plugin = $plugin;
-    }
+    public function __construct(
+        private PluginBase $plugin,
+        private Config $configData,
+        private Config $customMessages,
+    ) {}
 
     public function sendTitle(Player $player, string $messageKey, ?int $duration = null, bool $isRepeating = false): void
     {
         $this->clearTitle($player);
 
-        if (!(bool)$this->plugin->getConfig()->get("enable_titles", false)) {
+        if (!(bool)$this->configData->get("enable_titles", false)) {
             return;
         }
 
-        $titlesConfig = (array)$this->plugin->getCustomMessages()->get("titles", []);
+        $titlesConfig = (array)$this->customMessages->get("titles", []);
         if (!isset($titlesConfig[$messageKey])) {
             return;
         }

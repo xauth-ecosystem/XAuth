@@ -6,7 +6,7 @@ namespace Luthfi\XAuth\Application\Player;
 
 use Luthfi\XAuth\Domain\Event\PlayerStateSaveEvent;
 use Luthfi\XAuth\PlayerState;
-use Luthfi\XAuth\Main;
+use pocketmine\plugin\PluginBase;
 use Luthfi\XAuth\Domain\Player\VisibilityManager;
 use pocketmine\entity\effect\EffectInstance;
 use pocketmine\entity\effect\VanillaEffects;
@@ -19,10 +19,10 @@ class SavePlayerState {
     /** @var array<string, PlayerState> */
     private array $protectedStates = [];
 
-    private Main $plugin;
+    private PluginBase $plugin;
     private VisibilityManager $visibilityService;
 
-    public function __construct(Main $plugin, VisibilityManager $visibilityService) {
+    public function __construct(PluginBase $plugin, VisibilityManager $visibilityService) {
         $this->plugin = $plugin;
         $this->visibilityService = $visibilityService;
     }

@@ -28,6 +28,9 @@ declare(strict_types=1);
 namespace Luthfi\XAuth\Presentation\Form;
 
 use jojoe77777\FormAPI\CustomForm;
+use Luthfi\XAuth\Application\Auth\AuthenticationService;
+use Luthfi\XAuth\Application\Auth\Pipeline\AuthenticationFlowManager;
+use Luthfi\XAuth\Application\User\RegistrationService;
 use Luthfi\XAuth\Domain\Event\PlayerChangePasswordEvent;
 use Luthfi\XAuth\Domain\Event\PlayerPreAuthenticateEvent;
 use Luthfi\XAuth\Domain\Exception\AccountLockedException;
@@ -40,25 +43,39 @@ use Luthfi\XAuth\Domain\Exception\PlayerBlockedException;
 use Luthfi\XAuth\Domain\Exception\RegistrationRateLimitException;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
 use pocketmine\player\Player;
+use pocketmine\plugin\PluginBase;
+use pocketmine\utils\Config;
 use SOFe\AwaitGenerator\Await;
 use Throwable;
 
 class FormManager {
 
-    private Main $plugin;
+    private ?AuthenticationFlowManager $authenticationFlowManager = null;
 
-    public function __construct(Main $plugin) {
-        $this->plugin = $plugin;
+    public function __construct(
+        private PluginBase $plugin,
+        private Config $customMessages,
+        private Config $configData,
+        private RegistrationService $registrationService,
+        private ?AuthenticationService $authenticationService = null,
+    ) {}
+
+    public function setAuthenticationService(AuthenticationService $authenticationService): void {
+        $this->authenticationService = $authenticationService;
+    }
+
+    public function setAuthenticationFlowManager(AuthenticationFlowManager $authenticationFlowManager): void {
+        $this->authenticationFlowManager = $authenticationFlowManager;
     }
 
     public function sendLoginForm(Player $player, ?string $errorMessage = null): void {
-        $messages = (array)$this->plugin->getCustomMessages()->get("messages");
-        $formsConfig = (array)$this->plugin->getCustomMessages()->get("forms");
+        $messages = (array)$this->customMessages->get("messages");
+        $formsConfig = (array)$this->customMessages->get("forms");
         $loginFormConfig = (array)($formsConfig["login"] ?? []);
 
         $form = new CustomForm(function (Player $player, ?array $data) use ($messages): void {
             if ($data === null) {
-                if ((bool)($this->plugin->getConfig()->getNested("forms.kick-on-close") ?? false)) {
+                if ((bool)($this->configData->getNested("forms.kick-on-close") ?? false)) {
                     $player->kick((string)($messages["login_form_closed"] ?? "You have closed the login form."));
                 } else {
                     $this->sendLoginForm($player);
@@ -69,11 +86,11 @@ class FormManager {
             $password = (string)($data["password"] ?? '');
 
             Await::g2c(
-                $this->plugin->getAuthenticationService()->handleLoginRequest($player, $password),
+                $this->authenticationService->handleLoginRequest($player, $password),
                 function () use ($player): void {
-                    $context = $this->plugin->getAuthenticationFlowManager()->ensureContextExists($player);
+                    $context = $this->authenticationFlowManager->ensureContextExists($player);
                     $context->setLoginType(PlayerPreAuthenticateEvent::LOGIN_TYPE_MANUAL);
-                    $this->plugin->getAuthenticationFlowManager()->completeStep($player, 'xauth_login');
+                    $this->authenticationFlowManager->completeStep($player, 'xauth_login');
                 },
                 function (Throwable $e) use ($player, $messages): void {
                     if ($e instanceof AlreadyLoggedInException) {
@@ -81,7 +98,7 @@ class FormManager {
                     } elseif ($e instanceof PlayerBlockedException) {
                         $message = (string)($messages["login_attempts_exceeded"] ?? "§cYou have exceeded the number of login attempts. Please try again in {minutes} minutes.");
                         $message = str_replace('{minutes}', (string)$e->getRemainingMinutes(), $message);
-                        $bruteforceConfig = (array)$this->plugin->getConfig()->get('bruteforce_protection');
+                        $bruteforceConfig = (array)$this->configData->get('bruteforce_protection');
                         $kickOnBlock = (bool)($bruteforceConfig['kick_on_block'] ?? true);
                         if ($kickOnBlock) {
                             $player->kick($message);
@@ -115,13 +132,13 @@ class FormManager {
     }
 
     public function sendRegisterForm(Player $player, ?string $errorMessage = null): void {
-        $messages = (array)$this->plugin->getCustomMessages()->get("messages");
-        $formsConfig = (array)$this->plugin->getCustomMessages()->get("forms");
+        $messages = (array)$this->customMessages->get("messages");
+        $formsConfig = (array)$this->customMessages->get("forms");
         $registerFormConfig = (array)($formsConfig["register"] ?? []);
 
         $form = new CustomForm(function (Player $player, ?array $data) use ($messages): void {
             if ($data === null) {
-                if ((bool)($this->plugin->getConfig()->getNested("forms.kick-on-close") ?? false)) {
+                if ((bool)($this->configData->getNested("forms.kick-on-close") ?? false)) {
                     $player->kick((string)($messages["register_form_closed"] ?? "You have closed the registration form."));
                 } else {
                     $this->sendRegisterForm($player);
@@ -129,7 +146,7 @@ class FormManager {
                 return;
             }
 
-            $rulesToggleEnabled = (bool)($this->plugin->getConfig()->getNested("forms.register.rules_toggle.enabled") ?? false);
+            $rulesToggleEnabled = (bool)($this->configData->getNested("forms.register.rules_toggle.enabled") ?? false);
             if ($rulesToggleEnabled) {
                 $rulesAccepted = (bool)($data["rules_accepted"] ?? false);
                 if (!$rulesAccepted) {
@@ -142,7 +159,7 @@ class FormManager {
             $confirmPassword = (string)($data["confirm_password"] ?? '');
 
             try {
-                $registrationService = $this->plugin->getRegistrationService();
+                $registrationService = $this->registrationService;
                 $registrationService->handleRegistrationRequest($player, $password, $confirmPassword);
             } catch (AlreadyLoggedInException $e) {
                 $player->sendMessage((string)($messages["already_logged_in"] ?? "§cYou are already logged in."));
@@ -171,13 +188,13 @@ class FormManager {
         if ($errorMessage !== null) {
             $form->addLabel($errorMessage);
         }
-        $rulesToggleEnabled = (bool)($this->plugin->getConfig()->getNested("forms.register.rules_toggle.enabled") ?? false);
+        $rulesToggleEnabled = (bool)($this->configData->getNested("forms.register.rules_toggle.enabled") ?? false);
         if ($rulesToggleEnabled) {
-            $rulesText = (string)($this->plugin->getCustomMessages()->getNested("forms.register.rules_text") ?? "");
+            $rulesText = (string)($this->customMessages->getNested("forms.register.rules_text") ?? "");
             if (!empty($rulesText)) {
                 $form->addLabel($rulesText);
             }
-            $form->addToggle((string)($this->plugin->getCustomMessages()->getNested("forms.register.rules_toggle_label") ?? "I accept the server rules"), false, "rules_accepted");
+            $form->addToggle((string)($this->customMessages->getNested("forms.register.rules_toggle_label") ?? "I accept the server rules"), false, "rules_accepted");
         }
         $form->addInput((string)($registerFormConfig["password_label"] ?? "Password"), (string)($registerFormConfig["password_placeholder"] ?? ""), null, "password");
         $form->addInput((string)($registerFormConfig["confirm_password_label"] ?? "Confirm Password"), (string)($registerFormConfig["confirm_password_placeholder"] ?? ""), null, "confirm_password");
@@ -185,8 +202,8 @@ class FormManager {
     }
 
     public function sendChangePasswordForm(Player $player, ?string $errorMessage = null): void {
-        $messages = (array)$this->plugin->getCustomMessages()->get("messages");
-        $formsConfig = (array)$this->plugin->getCustomMessages()->get("forms");
+        $messages = (array)$this->customMessages->get("messages");
+        $formsConfig = (array)$this->customMessages->get("forms");
         $changePasswordFormConfig = (array)($formsConfig["changepassword"] ?? []);
 
         $form = new CustomForm(function (Player $player, ?array $data) use ($messages): void {
@@ -199,7 +216,7 @@ class FormManager {
             $confirmNewPassword = (string)($data["confirm_new_password"] ?? '');
 
             Await::g2c(
-                $this->plugin->getAuthenticationService()->handleChangePasswordRequest($player, $oldPassword, $newPassword, $confirmNewPassword),
+                $this->authenticationService->handleChangePasswordRequest($player, $oldPassword, $newPassword, $confirmNewPassword),
                 function () use ($player, $messages): void {
                     $player->sendMessage((string)($messages["change_password_success"] ?? "§aYour password has been changed successfully."));
                 },
@@ -235,13 +252,13 @@ class FormManager {
     }
 
     public function sendForceChangePasswordForm(Player $player, ?string $errorMessage = null): void {
-        $messages = (array)$this->plugin->getCustomMessages()->get("messages");
-        $formsConfig = (array)$this->plugin->getCustomMessages()->get("forms");
+        $messages = (array)$this->customMessages->get("messages");
+        $formsConfig = (array)$this->customMessages->get("forms");
         $forceChangePasswordFormConfig = (array)($formsConfig["forcechangepassword"] ?? []);
 
         $form = new CustomForm(function (Player $player, ?array $data) use ($messages): void {
             if ($data === null) {
-                if ((bool)($this->plugin->getConfig()->getNested("forms.kick-on-close") ?? false)) {
+                if ((bool)($this->configData->getNested("forms.kick-on-close") ?? false)) {
                     $player->kick((string)($messages["force_change_password_closed"] ?? "You must change your password to continue."));
                 } else {
                     $this->sendForceChangePasswordForm($player);
@@ -253,7 +270,7 @@ class FormManager {
             $confirmNewPassword = (string)($data["confirm_new_password"] ?? '');
 
             Await::g2c(
-                $this->plugin->getAuthenticationService()->handleForceChangePasswordRequest($player, $newPassword, $confirmNewPassword),
+                $this->authenticationService->handleForceChangePasswordRequest($player, $newPassword, $confirmNewPassword),
                 function () use ($player, $messages): void {
                     $player->sendMessage((string)($messages["change_password_success"] ?? "§aYour password has been changed successfully."));
                 },

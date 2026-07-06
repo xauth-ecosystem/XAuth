@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Luthfi\XAuth\Application\User;
 
 use Generator;
+use Luthfi\XAuth\Application\Auth\AuthenticationService;
 use Luthfi\XAuth\Application\User\DeleteUser;
 use Luthfi\XAuth\Application\User\RegisterUser;
 use Luthfi\XAuth\Domain\Event\PlayerRegisterEvent;
@@ -17,28 +18,31 @@ use Luthfi\XAuth\Domain\Exception\NotRegisteredException;
 use Luthfi\XAuth\Domain\Exception\PasswordMismatchException;
 use Luthfi\XAuth\Domain\Exception\RegistrationRateLimitException;
 use Luthfi\XAuth\Domain\Exception\UnregistrationNotInitiatedException;
-use Luthfi\XAuth\Main;
 use Luthfi\XAuth\Domain\User\PasswordHasher;
 use pocketmine\player\Player;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
+use pocketmine\plugin\PluginBase;
 
 class RegistrationService {
 
-    private Main $plugin;
     private RegisterUser $registerUser;
     private DeleteUser $deleteUser;
 
     /** @var array<string, int> */
     private array $confirmations = [];
 
-    public function __construct(Main $plugin, RegisterUser $registerUser, DeleteUser $deleteUser) {
-        $this->plugin = $plugin;
+    public function __construct(
+        private PluginBase $plugin,
+        RegisterUser $registerUser,
+        DeleteUser $deleteUser,
+        private AuthenticationService $authenticationService,
+    ) {
         $this->registerUser = $registerUser;
         $this->deleteUser = $deleteUser;
     }
 
     public function handleRegistrationRequest(Player $player, string $password, string $confirmPassword): Generator {
-        if ($this->plugin->getAuthenticationService()->isPlayerAuthenticated($player)) {
+        if ($this->authenticationService->isPlayerAuthenticated($player)) {
             throw new AlreadyLoggedInException();
         }
 

@@ -27,16 +27,21 @@ declare(strict_types=1);
 
 namespace Luthfi\XAuth\Application\Auth\Pipeline;
 
-use Luthfi\XAuth\Domain\Event\PlayerPreAuthenticateEvent;
-use Luthfi\XAuth\Main;
+use Luthfi\XAuth\Application\Auth\AuthenticationService;
 use Luthfi\XAuth\Application\Auth\Pipeline\Steps\AuthenticationStep;
 use Luthfi\XAuth\Application\Auth\Pipeline\Steps\FinalizableStep;
+use Luthfi\XAuth\Application\Player\PlayerStateService;
+use Luthfi\XAuth\Domain\User\UserRepository;
+use Luthfi\XAuth\Infrastructure\KickTaskManager;
+use Luthfi\XAuth\Presentation\Form\FormManager;
+use Luthfi\XAuth\Presentation\Title\TitleService;
+use Luthfi\XAuth\Domain\Event\PlayerPreAuthenticateEvent;
 use pocketmine\player\Player;
+use pocketmine\plugin\PluginBase;
+use pocketmine\utils\Config;
 use SOFe\AwaitGenerator\Await;
 
 class AuthenticationFlowManager {
-
-    private Main $plugin;
 
     /** @var array<string, AuthenticationStep> */
     private array $availableAuthenticationSteps = [];
@@ -49,15 +54,22 @@ class AuthenticationFlowManager {
     /** @var array<string, AuthenticationContext> */
     private array $playerContexts = [];
 
-    public function __construct(Main $plugin) {
-        $this->plugin = $plugin;
-        // Load ordered steps from config here, as Main will delegate this.
-        $flowOrder = (array)$this->plugin->getConfig()->get("authentication-flow-order", []);
+    public function __construct(
+        private PluginBase $plugin,
+        private Config $configData,
+        private Config $customMessages,
+        private FormManager $formManager,
+        private TitleService $titleService,
+        private PlayerStateService $playerStateService,
+        private AuthenticationService $authenticationService,
+        private KickTaskManager $kickTaskManager,
+        private ?UserRepository $userRepository,
+    ) {
+        $flowOrder = (array)$this->configData->get("authentication-flow-order", []);
         if (empty($flowOrder)) {
             $this->plugin->getLogger()->warning("No authentication flow order defined in config.yml. Using default XAuth login/register flow.");
         } else {
             $this->orderedAuthenticationSteps = $flowOrder;
-            // Check if the essential auth steps are in the flow, if not, warn the admin
             if (!in_array("xauth_login", $this->orderedAuthenticationSteps) && !in_array("xauth_register", $this->orderedAuthenticationSteps)) {
                 $this->plugin->getLogger()->warning("Neither 'xauth_login' nor 'xauth_register' are included in 'authentication-flow-order' in config.yml. Players may not be able to log in or register.");
             }
@@ -89,31 +101,31 @@ class AuthenticationFlowManager {
         $this->plugin->getLogger()->debug("XAuth: Starting authentication step chain for player {$playerName}.");
 
         $this->playerContexts[$playerName] = new AuthenticationContext();
-        $this->plugin->getPlayerStateService()->protectPlayer($player);
+        $this->playerStateService->protectPlayer($player);
 
         // If no ordered steps are defined in config, let XAuth handle it normally
         if (empty($this->orderedAuthenticationSteps)) {
             Await::g2c(function() use ($player, $playerName) {
                 $this->plugin->getLogger()->debug("No authentication flow order defined. Player '{$playerName}' will proceed with default XAuth flow.");
                 // Trigger XAuth's default login/register prompt here if needed
-                $playerData = yield from $this->plugin->getUserRepository()->findByName($player->getName());
-                $this->plugin->scheduleKickTask($player);
-                $formsEnabled = $this->plugin->getConfig()->getNested("forms.enabled", true);
+                $playerData = yield from $this->userRepository->findByName($player->getName());
+                $this->kickTaskManager->schedule($player);
+                $formsEnabled = $this->configData->getNested("forms.enabled", true);
                 if ($playerData !== null) {
-                    $message = (string)(((array)$this->plugin->getCustomMessages()->get("messages"))["login_prompt"] ?? "");
+                    $message = (string)(((array)$this->customMessages->get("messages"))["login_prompt"] ?? "");
                     $player->sendMessage($message);
                     if ($formsEnabled) {
-                        $this->plugin->getFormManager()->sendLoginForm($player);
+                        $this->formManager->sendLoginForm($player);
                     } else {
-                        $this->plugin->getTitleService()->sendTitle($player, "login_prompt", null, true);
+                        $this->titleService->sendTitle($player, "login_prompt", null, true);
                     }
                 } else {
-                    $message = (string)(((array)$this->plugin->getCustomMessages()->get("messages"))["register_prompt"] ?? "");
+                    $message = (string)(((array)$this->customMessages->get("messages"))["register_prompt"] ?? "");
                     $player->sendMessage($message);
                     if ($formsEnabled) {
-                        $this->plugin->getFormManager()->sendRegisterForm($player);
+                        $this->formManager->sendRegisterForm($player);
                     } else {
-                        $this->plugin->getTitleService()->sendTitle($player, "register_prompt", null, true);
+                        $this->titleService->sendTitle($player, "register_prompt", null, true);
                     }
                 }
             });
@@ -229,13 +241,13 @@ class AuthenticationFlowManager {
         $authEvent->call();
 
         if ($authEvent->isCancelled()) {
-            $this->plugin->getPlayerStateService()->restorePlayerState($player);
+            $this->playerStateService->restorePlayerState($player);
             $kickMessage = $authEvent->getKickMessage() ?? "Authentication cancelled by another plugin.";
             $player->kick($kickMessage);
             return;
         }
 
-        Await::g2c($this->plugin->getAuthenticationService()->finalizeAuthentication($player, $context));
+        Await::g2c($this->authenticationService->finalizeAuthentication($player, $context));
 
         foreach ($this->availableAuthenticationSteps as $step) {
             if ($step instanceof FinalizableStep) {

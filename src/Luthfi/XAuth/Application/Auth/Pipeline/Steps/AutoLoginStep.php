@@ -27,18 +27,29 @@ declare(strict_types=1);
 
 namespace Luthfi\XAuth\Application\Auth\Pipeline\Steps;
 
-use Luthfi\XAuth\Domain\Event\PlayerPreAuthenticateEvent;
+use Luthfi\XAuth\Application\Auth\Pipeline\AuthenticationFlowManager;
 use Luthfi\XAuth\Application\Auth\Pipeline\AuthenticationContext;
-use Luthfi\XAuth\Main;
+use Luthfi\XAuth\Domain\Session\SessionRepository;
+use Luthfi\XAuth\Infrastructure\DeviceIdStore;
+use Luthfi\XAuth\Presentation\Title\TitleService;
+use Luthfi\XAuth\Domain\Event\PlayerPreAuthenticateEvent;
 use pocketmine\player\Player;
+use pocketmine\plugin\PluginBase;
+use pocketmine\utils\Config;
 use SOFe\AwaitGenerator\Await;
 
 class AutoLoginStep implements AuthenticationStep, FinalizableStep {
 
-    private Main $plugin;
-
-    public function __construct(Main $plugin) {
-        $this->plugin = $plugin;
+    public function __construct(
+        private PluginBase $plugin,
+        private Config $configData,
+        private Config $customMessages,
+        private TitleService $titleService,
+        private AuthenticationFlowManager $authenticationFlowManager,
+        private ?SessionRepository $sessionRepository,
+        private DeviceIdStore $deviceIdStore,
+    ) {
+        parent::__construct();
     }
 
     public function getId(): string {
@@ -47,11 +58,11 @@ class AutoLoginStep implements AuthenticationStep, FinalizableStep {
 
     public function start(Player $player): void {
         $playerName = $player->getName();
-        $autoLoginConfig = (array)$this->plugin->getConfig()->get("auto-login", []);
+        $autoLoginConfig = (array)$this->configData->get("auto-login", []);
 
         if ((bool)($autoLoginConfig["enabled"] ?? false)) {
             Await::f2c(function() use ($player, $playerName, $autoLoginConfig) {
-                $sessions = yield from $this->plugin->getSessionRepository()->findAllByPlayer($playerName);
+                $sessions = yield from $this->sessionRepository->findAllByPlayer($playerName);
                 $ip = $player->getNetworkSession()->getIp();
                 $securityLevel = (int)($autoLoginConfig["security_level"] ?? 1);
 
@@ -61,11 +72,11 @@ class AutoLoginStep implements AuthenticationStep, FinalizableStep {
                     }
 
                     $ipMatch = $sessionData->getIpAddress() === $ip;
-                    $deviceId = $this->plugin->getDeviceIds()[strtolower($playerName)] ?? null;
+                    $deviceId = $this->deviceIdStore->get(strtolower($playerName)) ?? null;
                     $deviceIdMatch = $sessionData->getDeviceId()->value() === $deviceId;
 
                     if (($securityLevel === 1 && $ipMatch && $deviceIdMatch) || ($securityLevel === 0 && $ipMatch)) {
-                        $this->plugin->getAuthenticationFlowManager()->getContextForPlayer($player)->setLoginType(PlayerPreAuthenticateEvent::LOGIN_TYPE_AUTO);
+                        $this->authenticationFlowManager->getContextForPlayer($player)->setLoginType(PlayerPreAuthenticateEvent::LOGIN_TYPE_AUTO);
                         $this->complete($player);
                         return;
                     }
@@ -80,18 +91,18 @@ class AutoLoginStep implements AuthenticationStep, FinalizableStep {
     }
 
     public function complete(Player $player): void {
-        $this->plugin->getAuthenticationFlowManager()->completeStep($player, $this->getId());
+        $this->authenticationFlowManager->completeStep($player, $this->getId());
     }
 
     public function skip(Player $player): void {
-        $this->plugin->getAuthenticationFlowManager()->skipStep($player, $this->getId());
+        $this->authenticationFlowManager->skipStep($player, $this->getId());
     }
 
     public function onFlowComplete(Player $player, AuthenticationContext $context): void {
         if ($context->wasStepCompleted($this->getId())) {
-            $messages = (array)$this->plugin->getCustomMessages()->get("messages");
+            $messages = (array)$this->customMessages->get("messages");
             $player->sendMessage((string)($messages["auto_login_success"] ?? "§aYou have been automatically logged in."));
-            $this->plugin->getTitleService()->sendTitle($player, "auto_login_success", 2 * 20);
+            $this->titleService->sendTitle($player, "auto_login_success", 2 * 20);
         }
     }
 }

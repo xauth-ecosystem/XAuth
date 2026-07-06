@@ -27,22 +27,21 @@ declare(strict_types=1);
 
 namespace Luthfi\XAuth\Infrastructure\Scheduler;
 
-use Luthfi\XAuth\Main;
+use Luthfi\XAuth\Domain\Session\SessionRepository;
 use pocketmine\scheduler\Task;
 use SOFe\AwaitGenerator\Await;
 
 class CleanupSessionsTask extends Task {
 
-    private Main $plugin;
-
-    public function __construct(Main $plugin) {
-        $this->plugin = $plugin;
-    }
+    public function __construct(
+        private \pocketmine\plugin\PluginBase $plugin,
+        private SessionRepository $sessionRepository,
+    ) {}
 
     public function onRun(): void {
         Await::f2c(function () {
             $this->plugin->getLogger()->debug("Attempting to clean up expired sessions asynchronously.");
-            yield from $this->plugin->getSessionRepository()->cleanupExpired();
+            yield from $this->sessionRepository->cleanupExpired();
             $this->plugin->getLogger()->debug("Cleaned up expired sessions.");
         });
     }

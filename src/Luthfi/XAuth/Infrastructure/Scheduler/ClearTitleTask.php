@@ -27,23 +27,24 @@ declare(strict_types=1);
 
 namespace Luthfi\XAuth\Infrastructure\Scheduler;
 
-use Luthfi\XAuth\Main;
+use Luthfi\XAuth\Presentation\Title\TitleService;
 use pocketmine\player\Player;
 use pocketmine\scheduler\Task;
 
 class ClearTitleTask extends Task {
 
-    private Main $plugin;
     private Player $player;
 
-    public function __construct(Main $plugin, Player $player) {
-        $this->plugin = $plugin;
+    public function __construct(
+        private TitleService $titleService,
+        Player $player,
+    ) {
         $this->player = $player;
     }
 
     public function onRun(): void {
         if ($this->player->isOnline()) {
-            $this->plugin->getTitleService()->clearTitle($this->player);
+            $this->titleService->clearTitle($this->player);
         }
     }
 }

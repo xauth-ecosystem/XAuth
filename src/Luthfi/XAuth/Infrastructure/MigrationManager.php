@@ -7,20 +7,20 @@ namespace Luthfi\XAuth\Infrastructure;
 use Luthfi\XAuth\Infrastructure\Persistence\ConnectorFactory;
 use Luthfi\XAuth\Infrastructure\Persistence\SchemaManager;
 use Luthfi\XAuth\Domain\User\UserRepository;
-use Luthfi\XAuth\Main;
+use pocketmine\plugin\PluginBase;
+use pocketmine\utils\Config;
 use pocketmine\utils\TextFormat;
 use SOFe\AwaitGenerator\Await;
 use Throwable;
 
 class MigrationManager {
 
-    private Main $plugin;
-
     private static bool $isMigrationInProgress = false;
 
-    public function __construct(Main $plugin) {
-        $this->plugin = $plugin;
-    }
+    public function __construct(
+        private PluginBase $plugin,
+        private Config $customMessages,
+    ) {}
 
     public static function isMigrationInProgress(): bool {
         return self::$isMigrationInProgress;
@@ -45,7 +45,7 @@ class MigrationManager {
         Await::g2c(function() use ($sourceType, $destinationType) {
             $sourceConnector = null;
             $destinationConnector = null;
-            $messages = (array)$this->plugin->getCustomMessages()->get("messages");
+            $messages = (array)$this->customMessages->get("messages");
 
             try {
                 $this->plugin->getLogger()->info("Creating database connectors...");

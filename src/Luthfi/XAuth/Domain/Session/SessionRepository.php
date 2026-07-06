@@ -9,7 +9,7 @@ use Luthfi\XAuth\Domain\Session\DeviceId;
 use Luthfi\XAuth\Domain\Session\Session;
 use Luthfi\XAuth\Domain\Session\SessionId;
 use Luthfi\XAuth\Domain\User\Username;
-use Luthfi\XAuth\Main;
+use pocketmine\plugin\PluginBase;
 use Luthfi\XAuth\Infrastructure\Persistence\Queries;
 use poggit\libasynql\DataConnector;
 use poggit\libasynql\SqlError;
@@ -17,7 +17,7 @@ use poggit\libasynql\SqlError;
 class SessionRepository {
 
     public function __construct(
-        private Main $plugin,
+        private PluginBase $plugin,
         private DataConnector $connector
     ) {}
 

@@ -10,17 +10,22 @@ use Luthfi\XAuth\Domain\Exception\AccountLockedException;
 use Luthfi\XAuth\Domain\Exception\AlreadyRegisteredException;
 use Luthfi\XAuth\Domain\Exception\PasswordMismatchException;
 use Luthfi\XAuth\Domain\Exception\RegistrationRateLimitException;
+use Luthfi\XAuth\Domain\User\PasswordPolicy;
 use Luthfi\XAuth\Domain\User\UserRepository;
 use Luthfi\XAuth\Domain\User\PasswordHasher;
+use Luthfi\XAuth\Infrastructure\KickTaskManager;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
 use pocketmine\player\Player;
+use pocketmine\plugin\PluginBase;
 
 class RegisterUser {
 
     public function __construct(
         private UserRepository $userRepository,
         private PasswordHasher $passwordHasher,
-        private \Luthfi\XAuth\Main $plugin,
+        private PluginBase $plugin,
+        private PasswordPolicy $passwordPolicy,
+        private KickTaskManager $kickTaskManager,
     ) {}
 
     public function register(Player $player, string $password, string $confirmPassword): Generator {
@@ -38,7 +43,7 @@ class RegisterUser {
             throw new RegistrationRateLimitException();
         }
 
-        if (($message = $this->plugin->getPasswordPolicy()->validatePassword($password)) !== null) {
+        if (($message = $this->passwordPolicy->validatePassword($password)) !== null) {
             throw new InvalidCommandSyntaxException($message);
         }
 
@@ -46,7 +51,7 @@ class RegisterUser {
             throw new PasswordMismatchException();
         }
 
-        $this->plugin->cancelKickTask($player);
+        $this->kickTaskManager->cancel($player);
         $hashedPassword = $this->passwordHasher->hashPassword($password);
         yield from $this->userRepository->create($player, $hashedPassword);
 

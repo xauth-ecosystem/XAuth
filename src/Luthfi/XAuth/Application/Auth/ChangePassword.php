@@ -9,10 +9,12 @@ use Luthfi\XAuth\Domain\Event\PlayerChangePasswordEvent;
 use Luthfi\XAuth\Domain\Exception\IncorrectPasswordException;
 use Luthfi\XAuth\Domain\Exception\NotRegisteredException;
 use Luthfi\XAuth\Domain\Exception\PasswordMismatchException;
+use Luthfi\XAuth\Domain\User\PasswordPolicy;
 use Luthfi\XAuth\Domain\User\UserRepository;
 use Luthfi\XAuth\Domain\User\PasswordHasher;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
 use pocketmine\player\Player;
+use pocketmine\plugin\PluginBase;
 use pocketmine\Server;
 
 class ChangePassword {
@@ -20,7 +22,8 @@ class ChangePassword {
     public function __construct(
         private UserRepository $userRepository,
         private PasswordHasher $passwordHasher,
-        private \Luthfi\XAuth\Main $plugin,
+        private PluginBase $plugin,
+        private PasswordPolicy $passwordPolicy,
     ) {}
 
     public function handleForPlayer(Player $player, string $oldPassword, string $newPassword, string $confirmNewPassword): Generator {
@@ -40,7 +43,7 @@ class ChangePassword {
             yield from $this->userRepository->updatePassword($player, $currentHashedPassword);
         }
 
-        if (($message = $this->plugin->getPasswordPolicy()->validatePassword($newPassword)) !== null) {
+        if (($message = $this->passwordPolicy->validatePassword($newPassword)) !== null) {
             throw new InvalidCommandSyntaxException($message);
         }
 
@@ -71,7 +74,7 @@ class ChangePassword {
             yield from $this->userRepository->updatePassword($offlinePlayer, $currentHashedPassword);
         }
 
-        if (($message = $this->plugin->getPasswordPolicy()->validatePassword($newPassword)) !== null) {
+        if (($message = $this->passwordPolicy->validatePassword($newPassword)) !== null) {
             throw new InvalidCommandSyntaxException($message);
         }
 
@@ -84,7 +87,7 @@ class ChangePassword {
     }
 
     public function handleForceForPlayer(Player $player, string $newPassword, string $confirmNewPassword): Generator {
-        if (($message = $this->plugin->getPasswordPolicy()->validatePassword($newPassword)) !== null) {
+        if (($message = $this->passwordPolicy->validatePassword($newPassword)) !== null) {
             throw new InvalidCommandSyntaxException($message);
         }
 

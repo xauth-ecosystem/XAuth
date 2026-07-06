@@ -27,18 +27,21 @@ declare(strict_types=1);
 
 namespace Luthfi\XAuth\Presentation\Command;
 
+use Luthfi\XAuth\Application\Auth\AuthenticationService;
+use Luthfi\XAuth\Application\Auth\Pipeline\AuthenticationFlowManager;
 use Luthfi\XAuth\Domain\Event\PlayerPreAuthenticateEvent;
 use Luthfi\XAuth\Domain\Exception\AccountLockedException;
 use Luthfi\XAuth\Domain\Exception\AlreadyLoggedInException;
 use Luthfi\XAuth\Domain\Exception\IncorrectPasswordException;
 use Luthfi\XAuth\Domain\Exception\NotRegisteredException;
 use Luthfi\XAuth\Domain\Exception\PlayerBlockedException;
-use Luthfi\XAuth\Main;
 use pocketmine\command\Command;
 use pocketmine\command\CommandSender;
 use pocketmine\player\Player;
+use pocketmine\plugin\PluginBase;
 use pocketmine\plugin\PluginOwned;
 use pocketmine\plugin\PluginOwnedTrait;
+use pocketmine\utils\Config;
 use SOFe\AwaitGenerator\Await;
 use Throwable;
 
@@ -46,9 +49,12 @@ class LoginCommand extends Command implements PluginOwned {
     use PluginOwnedTrait;
 
     public function __construct(
-        private readonly Main $plugin
+        private readonly AuthenticationService $authenticationService,
+        private readonly AuthenticationFlowManager $authenticationFlowManager,
+        private readonly Config $customMessages,
+        private readonly PluginBase $plugin
     ) {
-        $messages = (array)$this->plugin->getCustomMessages()->get("messages");
+        $messages = (array)$this->customMessages->get("messages");
         parent::__construct(
             "login",
             (string)($messages["login_command_description"] ?? "Login to your account"),
@@ -59,24 +65,24 @@ class LoginCommand extends Command implements PluginOwned {
 
     public function execute(CommandSender $sender, string $label, array $args): bool {
         if (!$sender instanceof Player) {
-            $sender->sendMessage((string)($this->plugin->getCustomMessages()->get("messages.command_only_in_game") ?? "§cThis command can only be used in-game."));
+            $sender->sendMessage((string)($this->customMessages->get("messages.command_only_in_game") ?? "§cThis command can only be used in-game."));
             return false;
         }
 
         if (count($args) !== 1) {
-            $sender->sendMessage((string)($this->plugin->getCustomMessages()->get("messages.login_usage") ?? "§cUsage: /login <password>"));
+            $sender->sendMessage((string)($this->customMessages->get("messages.login_usage") ?? "§cUsage: /login <password>"));
             return false;
         }
 
         $password = $args[0];
-        $messages = (array)$this->plugin->getCustomMessages()->get("messages");
+        $messages = (array)$this->customMessages->get("messages");
 
         Await::g2c(
-            $this->plugin->getAuthenticationService()->handleLoginRequest($sender, $password),
+            $this->authenticationService->handleLoginRequest($sender, $password),
             function() use ($sender): void {
-                $context = $this->plugin->getAuthenticationFlowManager()->ensureContextExists($sender);
+                $context = $this->authenticationFlowManager->ensureContextExists($sender);
                 $context->setLoginType(PlayerPreAuthenticateEvent::LOGIN_TYPE_MANUAL);
-                $this->plugin->getAuthenticationFlowManager()->completeStep($sender, 'xauth_login');
+                $this->authenticationFlowManager->completeStep($sender, 'xauth_login');
             },
             function(Throwable $e) use ($sender, $messages): void {
                 switch (true) {

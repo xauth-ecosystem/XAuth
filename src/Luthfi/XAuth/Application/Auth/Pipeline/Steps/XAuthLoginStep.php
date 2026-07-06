@@ -27,18 +27,35 @@ declare(strict_types=1);
 
 namespace Luthfi\XAuth\Application\Auth\Pipeline\Steps;
 
-use Luthfi\XAuth\Domain\Event\PlayerAuthenticateEvent;
+use Luthfi\XAuth\Application\Auth\AuthenticationService;
+use Luthfi\XAuth\Application\Auth\Pipeline\AuthenticationFlowManager;
 use Luthfi\XAuth\Application\Auth\Pipeline\AuthenticationContext;
-use Luthfi\XAuth\Main;
+use Luthfi\XAuth\Application\Player\PlayerStateService;
+use Luthfi\XAuth\Domain\User\UserRepository;
+use Luthfi\XAuth\Infrastructure\KickTaskManager;
+use Luthfi\XAuth\Presentation\Form\FormManager;
+use Luthfi\XAuth\Presentation\Title\TitleService;
+use Luthfi\XAuth\Domain\Event\PlayerAuthenticateEvent;
 use pocketmine\player\Player;
+use pocketmine\plugin\PluginBase;
+use pocketmine\utils\Config;
 use SOFe\AwaitGenerator\Await;
 
 class XAuthLoginStep implements AuthenticationStep, FinalizableStep {
 
-    private Main $plugin;
-
-    public function __construct(Main $plugin) {
-        $this->plugin = $plugin;
+    public function __construct(
+        private PluginBase $plugin,
+        private Config $configData,
+        private Config $customMessages,
+        private FormManager $formManager,
+        private TitleService $titleService,
+        private AuthenticationService $authenticationService,
+        private PlayerStateService $playerStateService,
+        private AuthenticationFlowManager $authenticationFlowManager,
+        private ?UserRepository $userRepository,
+        private KickTaskManager $kickTaskManager,
+    ) {
+        parent::__construct();
     }
 
     public function getId(): string {
@@ -47,22 +64,22 @@ class XAuthLoginStep implements AuthenticationStep, FinalizableStep {
 
     public function start(Player $player): void {
         Await::f2c(function () use ($player) {
-            if ($this->plugin->getAuthenticationService()->isPlayerAuthenticated($player)) {
+            if ($this->authenticationService->isPlayerAuthenticated($player)) {
                 $this->skip($player);
                 return;
             }
 
-            $playerData = yield from $this->plugin->getUserRepository()->findByName($player->getName());
+            $playerData = yield from $this->userRepository->findByName($player->getName());
             if ($playerData !== null) {
-                $this->plugin->getPlayerStateService()->protectPlayer($player);
-                $this->plugin->scheduleKickTask($player);
-                $formsEnabled = $this->plugin->getConfig()->getNested("forms.enabled", true);
-                $message = (string)(((array)$this->plugin->getCustomMessages()->get("messages"))["login_prompt"] ?? "");
+                $this->playerStateService->protectPlayer($player);
+                $this->kickTaskManager->schedule($player);
+                $formsEnabled = $this->configData->getNested("forms.enabled", true);
+                $message = (string)(((array)$this->customMessages->get("messages"))["login_prompt"] ?? "");
                 $player->sendMessage($message);
                 if ($formsEnabled) {
-                    $this->plugin->getFormManager()->sendLoginForm($player);
+                    $this->formManager->sendLoginForm($player);
                 } else {
-                    $this->plugin->getTitleService()->sendTitle($player, "login_prompt", null, true);
+                    $this->titleService->sendTitle($player, "login_prompt", null, true);
                 }
             } else {
                 $this->skip($player); 
@@ -71,18 +88,18 @@ class XAuthLoginStep implements AuthenticationStep, FinalizableStep {
     }
 
     public function complete(Player $player): void {
-        $this->plugin->getAuthenticationFlowManager()->completeStep($player, $this->getId());
+        $this->authenticationFlowManager->completeStep($player, $this->getId());
     }
 
     public function skip(Player $player): void {
-        $this->plugin->getAuthenticationFlowManager()->skipStep($player, $this->getId());
+        $this->authenticationFlowManager->skipStep($player, $this->getId());
     }
 
     public function onFlowComplete(Player $player, AuthenticationContext $context): void {
         if ($context->wasStepCompleted($this->getId())) {
-            $messages = (array)$this->plugin->getCustomMessages()->get("messages");
+            $messages = (array)$this->customMessages->get("messages");
             $player->sendMessage((string)($messages["login_success"] ?? ""));
-            $this->plugin->getTitleService()->sendTitle($player, "login_success", 2 * 20);
+            $this->titleService->sendTitle($player, "login_success", 2 * 20);
         }
     }
 }

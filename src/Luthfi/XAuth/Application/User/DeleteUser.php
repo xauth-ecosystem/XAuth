@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Luthfi\XAuth\Application\User;
 
 use Generator;
+use Luthfi\XAuth\Application\Auth\AuthenticationService;
 use Luthfi\XAuth\Domain\Event\PlayerUnregisterEvent;
 use Luthfi\XAuth\Domain\Exception\ConfirmationExpiredException;
 use Luthfi\XAuth\Domain\Exception\IncorrectPasswordException;
@@ -13,6 +14,8 @@ use Luthfi\XAuth\Domain\Exception\UnregistrationNotInitiatedException;
 use Luthfi\XAuth\Domain\User\PasswordHasher;
 use Luthfi\XAuth\Domain\User\UserRepository;
 use pocketmine\player\Player;
+use pocketmine\plugin\PluginBase;
+use pocketmine\utils\Config;
 
 class DeleteUser {
 
@@ -22,7 +25,9 @@ class DeleteUser {
     public function __construct(
         private UserRepository $userRepository,
         private PasswordHasher $passwordHasher,
-        private \Luthfi\XAuth\Main $plugin,
+        private PluginBase $plugin,
+        private Config $customMessages,
+        private AuthenticationService $authenticationService,
     ) {}
 
     public function initiate(Player $player): void {
@@ -51,7 +56,7 @@ class DeleteUser {
         yield from $this->userRepository->delete($player->getName());
         (new PlayerUnregisterEvent($player))->call();
 
-        $kickMessage = (string)($this->plugin->getCustomMessages()->get("messages.unregister_success_kick") ?? "§aYour account has been successfully unregistered.");
+        $kickMessage = (string)($this->customMessages->get("messages.unregister_success_kick") ?? "§aYour account has been successfully unregistered.");
         $player->kick($kickMessage);
     }
 
@@ -66,8 +71,8 @@ class DeleteUser {
 
         $player = $this->plugin->getServer()->getPlayerExact($playerName);
         if ($player !== null) {
-            yield from $this->plugin->getAuthenticationService()->handleLogout($player);
-            $player->sendMessage((string)(($this->plugin->getCustomMessages()->get("messages"))["account_unregistered_by_admin"] ?? "§eYour account has been unregistered by an administrator. Please register again."));
+            yield from $this->authenticationService->handleLogout($player);
+            $player->sendMessage((string)(($this->customMessages->get("messages"))["account_unregistered_by_admin"] ?? "§eYour account has been unregistered by an administrator. Please register again."));
         }
     }
 }

@@ -27,7 +27,6 @@ declare(strict_types=1);
 
 namespace Luthfi\XAuth\Presentation\Listener;
 
-use Luthfi\XAuth\Main;
 use Luthfi\XAuth\Infrastructure\Network\Handler\WaterdogExtrasLoginPacketHandler;
 use pocketmine\event\Listener;
 use pocketmine\event\server\DataPacketReceiveEvent;
@@ -35,16 +34,17 @@ use pocketmine\network\mcpe\JwtException;
 use pocketmine\network\mcpe\JwtUtils;
 use pocketmine\network\mcpe\protocol\LoginPacket;
 use pocketmine\network\PacketHandlingException;
+use pocketmine\plugin\PluginBase;
 use pocketmine\Server;
+use pocketmine\utils\Config;
 use Throwable;
 
 class WaterdogFixListener implements Listener {
 
-    private Main $plugin;
-
-    public function __construct(Main $plugin) {
-        $this->plugin = $plugin;
-    }
+    public function __construct(
+        private PluginBase $plugin,
+        private Config $customMessages,
+    ) {}
 
     /**
      * @param DataPacketReceiveEvent $event
@@ -72,7 +72,7 @@ class WaterdogFixListener implements Listener {
                 )
                 && $forceWaterdog
             ) {
-                $kickMessage = (string)(((array)$this->plugin->getCustomMessages()->get("messages"))["waterdog_kick_message"] ?? "§cNot authenticated to WaterdogPE!\n§cPlease connect to WaterdogPE!");
+                $kickMessage = (string)(((array)$this->customMessages->get("messages"))["waterdog_kick_message"] ?? "§cNot authenticated to WaterdogPE!\n§cPlease connect to WaterdogPE!");
                 $event->getOrigin()->disconnect($kickMessage);
                 return;
             }
@@ -83,7 +83,7 @@ class WaterdogFixListener implements Listener {
                     $event->getOrigin(),
                     $clientData["Waterdog_XUID"],
                     $clientData["Waterdog_IP"],
-                    $this->plugin
+                    $this->customMessages
                 ));
             }
             unset($clientData);

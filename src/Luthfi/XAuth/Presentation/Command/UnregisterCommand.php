@@ -27,15 +27,18 @@ declare(strict_types=1);
 
 namespace Luthfi\XAuth\Presentation\Command;
 
+use Luthfi\XAuth\Application\Auth\AuthenticationService;
+use Luthfi\XAuth\Application\User\RegistrationService;
 use Luthfi\XAuth\Domain\Exception\ConfirmationExpiredException;
 use Luthfi\XAuth\Domain\Exception\IncorrectPasswordException;
 use Luthfi\XAuth\Domain\Exception\UnregistrationNotInitiatedException;
-use Luthfi\XAuth\Main;
 use pocketmine\command\Command;
 use pocketmine\command\CommandSender;
 use pocketmine\player\Player;
+use pocketmine\plugin\PluginBase;
 use pocketmine\plugin\PluginOwned;
 use pocketmine\plugin\PluginOwnedTrait;
+use pocketmine\utils\Config;
 use SOFe\AwaitGenerator\Await;
 use Throwable;
 
@@ -43,9 +46,12 @@ class UnregisterCommand extends Command implements PluginOwned {
     use PluginOwnedTrait;
 
     public function __construct(
-        private readonly Main $plugin
+        private readonly AuthenticationService $authenticationService,
+        private readonly RegistrationService $registrationService,
+        private readonly Config $customMessages,
+        private readonly PluginBase $plugin
     ) {
-        $messages = (array)$this->plugin->getCustomMessages()->get("messages");
+        $messages = (array)$this->customMessages->get("messages");
         parent::__construct(
             "unregister",
             (string)($messages["unregister_command_description"] ?? "Unregister your account."),
@@ -55,7 +61,7 @@ class UnregisterCommand extends Command implements PluginOwned {
     }
 
     public function execute(CommandSender $sender, string $label, array $args): bool {
-        $messages = (array)$this->plugin->getCustomMessages()->get("messages");
+        $messages = (array)$this->customMessages->get("messages");
 
         $commandSettings = (array)$this->plugin->getConfig()->get("command_settings");
         if (isset($commandSettings['allow_player_self_unregister']) && $commandSettings['allow_player_self_unregister'] === false) {
@@ -68,7 +74,7 @@ class UnregisterCommand extends Command implements PluginOwned {
             return false;
         }
 
-        if (!$this->plugin->getAuthenticationService()->isPlayerAuthenticated($sender)) {
+        if (!$this->authenticationService->isPlayerAuthenticated($sender)) {
             $sender->sendMessage((string)($messages["not_logged_in"] ?? "§cYou are not logged in."));
             return false;
         }
@@ -81,7 +87,7 @@ class UnregisterCommand extends Command implements PluginOwned {
             $password = $args[1];
 
             Await::g2c(
-                $this->plugin->getRegistrationService()->confirmUnregistration($sender, $password),
+                $this->registrationService->confirmUnregistration($sender, $password),
                 static function(): void {
                     // Success is handled by the service (player is kicked)
                 },
@@ -104,7 +110,7 @@ class UnregisterCommand extends Command implements PluginOwned {
                 }
             );
         } else {
-            $this->plugin->getRegistrationService()->initiateUnregistration($sender);
+            $this->registrationService->initiateUnregistration($sender);
             $sender->sendMessage((string)($messages["unregister_initiate"] ?? "§eAre you sure you want to unregister? This action is irreversible.§r\n§eType §f/unregister confirm <password>§e within 60 seconds to confirm."));
         }
         return true;

@@ -8,7 +8,7 @@ use Generator;
 use Luthfi\XAuth\Domain\User\User as DomainUser;
 use Luthfi\XAuth\Domain\User\Username;
 use Luthfi\XAuth\Domain\User\PasswordHash;
-use Luthfi\XAuth\Main;
+use pocketmine\plugin\PluginBase;
 use Luthfi\XAuth\Infrastructure\Persistence\Queries;
 use pocketmine\player\OfflinePlayer;
 use pocketmine\player\Player;
@@ -19,7 +19,7 @@ use SOFe\AwaitGenerator\Await;
 class UserRepository {
 
     public function __construct(
-        private Main $plugin,
+        private PluginBase $plugin,
         private DataConnector $connector
     ) {}
 

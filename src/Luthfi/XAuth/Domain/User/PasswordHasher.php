@@ -28,15 +28,16 @@ declare(strict_types=1);
 namespace Luthfi\XAuth\Domain\User;
 
 use InvalidArgumentException;
+use pocketmine\plugin\PluginBase;
 use pocketmine\utils\Config;
 
 class PasswordHasher {
 
-    private Main $plugin;
+    private PluginBase $plugin;
     private string $algorithm;
     private array $options;
 
-    public function __construct(Main $plugin) {
+    public function __construct(PluginBase $plugin) {
         $this->plugin = $plugin;
         $this->loadConfig();
     }

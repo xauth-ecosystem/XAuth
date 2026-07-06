@@ -14,8 +14,9 @@ use Luthfi\XAuth\Domain\Event\PlayerDeauthenticateEvent;
 use Luthfi\XAuth\Domain\Exception\AlreadyLoggedInException;
 use Luthfi\XAuth\Domain\Exception\NotRegisteredException;
 use Luthfi\XAuth\Application\Auth\Pipeline\AuthenticationContext;
+use Luthfi\XAuth\Domain\User\PasswordPolicy;
+use Luthfi\XAuth\Infrastructure\KickTaskManager;
 use Luthfi\XAuth\Presentation\Form\FormManager;
-use Luthfi\XAuth\Main;
 use Luthfi\XAuth\Application\Player\PlayerStateService;
 use Luthfi\XAuth\Application\Session\SessionService;
 use Luthfi\XAuth\Domain\Auth\LoginRateLimiter;
@@ -26,11 +27,11 @@ use Luthfi\XAuth\Domain\User\UserRepository;
 use Luthfi\XAuth\Presentation\Title\TitleService;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
 use pocketmine\player\Player;
+use pocketmine\plugin\PluginBase;
 use pocketmine\Server;
 
 class AuthenticationService {
 
-    private Main $plugin;
     private UserRepository $userRepository;
     private SessionRepository $sessionRepository;
     private PasswordHasher $passwordHasher;
@@ -38,7 +39,7 @@ class AuthenticationService {
     private PlayerStateService $playerStateService;
     private VisibilityManager $playerVisibilityService;
     private TitleService $titleManager;
-    private FormManager $formManager;
+    private ?FormManager $formManager = null;
     private LoginRateLimiter $loginThrottler;
     private LoginUser $loginUser;
     private LogoutUser $logoutUser;
@@ -52,7 +53,7 @@ class AuthenticationService {
     private array $forcePasswordChange = [];
 
     public function __construct(
-        Main $plugin,
+        private PluginBase $plugin,
         UserRepository $userRepository,
         SessionRepository $sessionRepository,
         PasswordHasher $passwordHasher,
@@ -60,14 +61,14 @@ class AuthenticationService {
         PlayerStateService $playerStateService,
         VisibilityManager $playerVisibilityService,
         TitleService $titleManager,
-        FormManager $formManager,
         LoginRateLimiter $loginThrottler,
         LoginUser $loginUser,
         LogoutUser $logoutUser,
         ChangePassword $changePassword,
-        VerifyPassword $verifyPassword
+        VerifyPassword $verifyPassword,
+        private KickTaskManager $kickTaskManager,
+        private PasswordPolicy $passwordPolicy,
     ) {
-        $this->plugin = $plugin;
         $this->userRepository = $userRepository;
         $this->sessionRepository = $sessionRepository;
         $this->passwordHasher = $passwordHasher;
@@ -75,7 +76,6 @@ class AuthenticationService {
         $this->playerStateService = $playerStateService;
         $this->playerVisibilityService = $playerVisibilityService;
         $this->titleManager = $titleManager;
-        $this->formManager = $formManager;
         $this->loginThrottler = $loginThrottler;
         $this->loginUser = $loginUser;
         $this->logoutUser = $logoutUser;
@@ -83,9 +83,13 @@ class AuthenticationService {
         $this->verifyPassword = $verifyPassword;
     }
 
+    public function setFormManager(FormManager $formManager): void {
+        $this->formManager = $formManager;
+    }
+
     public function finalizeAuthentication(Player $player, AuthenticationContext $context): Generator {
         $this->titleManager->clearTitle($player);
-        $this->plugin->cancelKickTask($player);
+        $this->kickTaskManager->cancel($player);
         yield from $this->userRepository->updateIp($player);
         $this->authenticatePlayer($player);
 
@@ -196,7 +200,7 @@ class AuthenticationService {
             throw new NotRegisteredException();
         }
 
-        if (($message = $this->plugin->getPasswordPolicy()->validatePassword($newPassword)) !== null) {
+        if (($message = $this->passwordPolicy->validatePassword($newPassword)) !== null) {
             throw new InvalidCommandSyntaxException($message);
         }
 

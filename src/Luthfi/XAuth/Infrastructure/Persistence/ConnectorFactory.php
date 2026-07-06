@@ -28,12 +28,12 @@ declare(strict_types=1);
 namespace Luthfi\XAuth\Infrastructure\Persistence;
 
 use InvalidArgumentException;
-use Luthfi\XAuth\Main;
+use pocketmine\plugin\PluginBase;
 use poggit\libasynql\DataConnector;
 use poggit\libasynql\libasynql;
 
 class ConnectorFactory {
-    public static function create(Main $plugin, string $providerType): DataConnector {
+    public static function create(PluginBase $plugin, string $providerType): DataConnector {
         $databaseConfig = $plugin->getConfig()->get('database', []);
         
         if (!isset($databaseConfig[$providerType])) {

@@ -27,20 +27,20 @@ declare(strict_types=1);
 
 namespace Luthfi\XAuth\Infrastructure;
 
-use Luthfi\XAuth\Main;
+use Luthfi\XAuth\Domain\Player\VisibilityManager;
+use pocketmine\plugin\PluginBase;
 use pocketmine\utils\Config;
 
 class PluginControlService {
 
-    private Main $plugin;
-
-    public function __construct(Main $plugin) {
-        $this->plugin = $plugin;
-    }
+    public function __construct(
+        private PluginBase $plugin,
+        private Config $customMessages,
+        private VisibilityManager $visibilityManager,
+    ) {}
 
     public function reload(): void {
-        $main = $this->plugin;
-        $config = $main->getConfig();
+        $config = $this->plugin->getConfig();
 
         $oldData = [
             'in_world_visibility' => (array)$config->get('in_world_visibility', []),
@@ -49,7 +49,7 @@ class PluginControlService {
         ];
 
         $config->reload();
-        $main->getCustomMessages()->reload();
+        $this->customMessages->reload();
 
         $newData = [
             'in_world_visibility' => (array)$config->get('in_world_visibility', []),
@@ -58,8 +58,8 @@ class PluginControlService {
         ];
 
         if ($oldData !== $newData) {
-            foreach ($main->getServer()->getOnlinePlayers() as $player) {
-                $main->getVisibilityManager()->updatePlayerVisibility($player);
+            foreach ($this->plugin->getServer()->getOnlinePlayers() as $player) {
+                $this->visibilityManager->updatePlayerVisibility($player);
             }
         }
     }

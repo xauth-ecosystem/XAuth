@@ -27,16 +27,19 @@ declare(strict_types=1);
 
 namespace Luthfi\XAuth\Presentation\Command;
 
+use Luthfi\XAuth\Application\Auth\AuthenticationService;
 use Luthfi\XAuth\Domain\Exception\IncorrectPasswordException;
 use Luthfi\XAuth\Domain\Exception\NotRegisteredException;
 use Luthfi\XAuth\Domain\Exception\PasswordMismatchException;
-use Luthfi\XAuth\Main;
+use Luthfi\XAuth\Presentation\Form\FormManager;
 use pocketmine\command\Command;
 use pocketmine\command\CommandSender;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
 use pocketmine\player\Player;
+use pocketmine\plugin\PluginBase;
 use pocketmine\plugin\PluginOwned;
 use pocketmine\plugin\PluginOwnedTrait;
+use pocketmine\utils\Config;
 use SOFe\AwaitGenerator\Await;
 use Throwable;
 
@@ -44,9 +47,12 @@ class ResetPasswordCommand extends Command implements PluginOwned {
     use PluginOwnedTrait;
 
     public function __construct(
-        private readonly Main $plugin
+        private readonly AuthenticationService $authenticationService,
+        private readonly FormManager $formManager,
+        private readonly Config $customMessages,
+        private readonly PluginBase $plugin
     ) {
-        $messages = (array)$this->plugin->getCustomMessages()->get("messages");
+        $messages = (array)$this->customMessages->get("messages");
         parent::__construct(
             "resetpassword",
             (string)($messages["resetpassword_command_description"] ?? "Reset your password"),
@@ -56,14 +62,14 @@ class ResetPasswordCommand extends Command implements PluginOwned {
     }
 
     public function execute(CommandSender $sender, string $label, array $args): bool {
-        $messages = (array)$this->plugin->getCustomMessages()->get("messages");
+        $messages = (array)$this->customMessages->get("messages");
 
         if (!$sender instanceof Player) {
             $sender->sendMessage((string)($messages["command_only_in_game"] ?? "§cThis command can only be used in-game."));
             return false;
         }
 
-        $formManager = $this->plugin->getFormManager();
+        $formManager = $this->formManager;
         if ($formManager !== null && empty($args)) {
             $formManager->sendChangePasswordForm($sender);
             return true;
@@ -79,7 +85,7 @@ class ResetPasswordCommand extends Command implements PluginOwned {
         $confirmNewPassword = (string)($args[2] ?? '');
 
         Await::g2c(
-            $this->plugin->getAuthenticationService()->handleChangePasswordRequest($sender, $oldPassword, $newPassword, $confirmNewPassword),
+            $this->authenticationService->handleChangePasswordRequest($sender, $oldPassword, $newPassword, $confirmNewPassword),
             function() use ($sender, $messages): void {
                 $sender->sendMessage((string)($messages["change_password_success"] ?? "§aYour password has been changed successfully."));
             },

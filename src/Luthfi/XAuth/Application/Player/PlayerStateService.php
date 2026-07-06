@@ -29,23 +29,23 @@ namespace Luthfi\XAuth\Application\Player;
 
 use Luthfi\XAuth\Domain\Event\PlayerStateRestoreEvent;
 use Luthfi\XAuth\Domain\Event\PlayerStateSaveEvent;
-use Luthfi\XAuth\Main;
 use Luthfi\XAuth\PlayerState;
 use pocketmine\entity\effect\EffectInstance;
 use pocketmine\entity\effect\VanillaEffects;
 use pocketmine\player\GameMode;
 use pocketmine\player\Player;
+use pocketmine\plugin\PluginBase;
 use pocketmine\world\Position;
 
 class PlayerStateService {
 
-    private Main $plugin;
+    private PluginBase $plugin;
     private VisibilityManager $visibilityService;
 
     /** @var array<string, PlayerState> */
     private array $protectedStates = [];
 
-    public function __construct(Main $plugin, VisibilityManager $visibilityService) {
+    public function __construct(PluginBase $plugin, VisibilityManager $visibilityService) {
         $this->plugin = $plugin;
         $this->visibilityService = $visibilityService;
     }

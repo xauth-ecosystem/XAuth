@@ -28,7 +28,7 @@ declare(strict_types=1);
 namespace Luthfi\XAuth\Infrastructure\Persistence;
 
 use InvalidArgumentException;
-use Luthfi\XAuth\Main;
+use pocketmine\plugin\PluginBase;
 use poggit\libasynql\DataConnector;
 use poggit\libasynql\libasynql;
 
@@ -43,13 +43,13 @@ class DataProviderFactory {
         self::$providers[strtolower($type)] = $factory;
     }
 
-    public static function create(Main $plugin, array $config): DataProviderInterface {
+    public static function create(PluginBase $plugin, array $config): DataProviderInterface {
         $providerType = strtolower((string)($config['type'] ?? 'sqlite'));
         $connector = ConnectorFactory::create($plugin, $providerType);
         return self::createProvider($plugin, $providerType, $connector);
     }
 
-    public static function createProvider(Main $plugin, string $providerType, DataConnector $connector): DataProviderInterface {
+    public static function createProvider(PluginBase $plugin, string $providerType, DataConnector $connector): DataProviderInterface {
         $type = strtolower($providerType);
         if (!isset(self::$providers[$type])) {
             throw new InvalidArgumentException("Invalid data provider type: " . $type);

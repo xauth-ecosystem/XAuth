@@ -30,6 +30,7 @@ namespace Luthfi\XAuth;
 use pocketmine\entity\effect\VanillaEffects;
 use pocketmine\player\GameMode;
 use pocketmine\player\Player;
+use pocketmine\plugin\PluginBase;
 use pocketmine\world\Position;
 
 class PlayerState {
@@ -46,9 +47,9 @@ class PlayerState {
     private Position $position;
     private bool $canFly;
     private bool $isFlying;
-    private Main $plugin;
+    private PluginBase $plugin;
 
-    public function __construct(Player $player, Main $plugin) {
+    public function __construct(Player $player, PluginBase $plugin) {
         $this->plugin = $plugin;
         $this->inventoryContents = $player->getInventory()->getContents();
         $this->armorInventoryContents = $player->getArmorInventory()->getContents();

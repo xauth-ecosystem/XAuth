@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace Luthfi\XAuth\Infrastructure\Persistence;
 
-use Luthfi\XAuth\Main;
+use pocketmine\plugin\PluginBase;
 use Luthfi\XAuth\Infrastructure\Persistence\Queries;
 use poggit\libasynql\DataConnector;
 
 class SchemaManager {
 
     public function __construct(
-        private Main $plugin,
+        private PluginBase $plugin,
         private DataConnector $connector
     ) {}
 

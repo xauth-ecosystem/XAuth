@@ -27,15 +27,21 @@ declare(strict_types=1);
 
 namespace Luthfi\XAuth\Presentation\Expansion;
 
-use Luthfi\XAuth\Main;
+use Luthfi\XAuth\Application\Auth\AuthenticationService;
 use MohamadRZ4\Placeholder\expansion\PlaceholderExpansion;
 use pocketmine\player\Player;
+use pocketmine\plugin\PluginBase;
+use pocketmine\utils\Config;
 
 class XAuthExpansion extends PlaceholderExpansion {
 
     protected $plugin;
 
-    public function __construct(Main $plugin) {
+    public function __construct(
+        private AuthenticationService $authenticationService,
+        private Config $customMessages,
+        PluginBase $plugin,
+    ) {
         $this->plugin = $plugin;
     }
 
@@ -57,7 +63,7 @@ class XAuthExpansion extends PlaceholderExpansion {
                 case "authenticated_players":
                     $count = 0;
                     foreach ($this->plugin->getServer()->getOnlinePlayers() as $onlinePlayer) {
-                        if ($this->plugin->getAuthenticationService()->isPlayerAuthenticated($onlinePlayer)) {
+                        if ($this->authenticationService->isPlayerAuthenticated($onlinePlayer)) {
                             $count++;
                         }
                     }
@@ -65,7 +71,7 @@ class XAuthExpansion extends PlaceholderExpansion {
                 case "unauthenticated_players":
                     $count = 0;
                     foreach ($this->plugin->getServer()->getOnlinePlayers() as $onlinePlayer) {
-                        if (!$this->plugin->getAuthenticationService()->isPlayerAuthenticated($onlinePlayer)) {
+                        if (!$this->authenticationService->isPlayerAuthenticated($onlinePlayer)) {
                             $count++;
                         }
                     }
@@ -76,7 +82,7 @@ class XAuthExpansion extends PlaceholderExpansion {
 
         switch ($placeholder) {
             case "is_authenticated":
-                return $this->getTranslatedText($placeholder, $this->plugin->getAuthenticationService()->isPlayerAuthenticated($player));
+                return $this->getTranslatedText($placeholder, $this->authenticationService->isPlayerAuthenticated($player));
             case "is_registered":
                 // TODO: This is not possible to implement synchronously with an async database.
                 // The original implementation was also broken.
@@ -93,6 +99,6 @@ class XAuthExpansion extends PlaceholderExpansion {
     private function getTranslatedText(string $placeholder, bool $value): string {
         $key = "placeholders." . $placeholder . "." . ($value ? "true" : "false");
         $defaultValue = $value ? "Yes" : "No";
-        return (string)($this->plugin->getCustomMessages()->getNested($key) ?? $defaultValue);
+        return (string)($this->customMessages->getNested($key) ?? $defaultValue);
     }
 }

@@ -27,7 +27,12 @@ declare(strict_types=1);
 
 namespace Luthfi\XAuth\Presentation\Listener;
 
-use Luthfi\XAuth\Main;
+use Luthfi\XAuth\Application\Auth\AuthenticationService;
+use Luthfi\XAuth\Application\Auth\Pipeline\AuthenticationFlowManager;
+use Luthfi\XAuth\Domain\User\UserRepository;
+use Luthfi\XAuth\Infrastructure\DeviceIdStore;
+use pocketmine\plugin\PluginBase;
+use pocketmine\utils\Config;
 use pocketmine\event\Listener;
 use pocketmine\event\player\PlayerJoinEvent;
 use pocketmine\event\player\PlayerPreLoginEvent;
@@ -38,10 +43,20 @@ use SOFe\AwaitGenerator\Await;
 
 class PlayerSessionListener implements Listener {
 
-    private Main $plugin;
+    private PluginBase $plugin;
+    private AuthenticationService $authenticationService;
+    private AuthenticationFlowManager $authenticationFlowManager;
+    private Config $customMessages;
+    private DeviceIdStore $deviceIdStore;
+    private UserRepository $userRepository;
 
-    public function __construct(Main $plugin) {
+    public function __construct(PluginBase $plugin, AuthenticationService $authenticationService, AuthenticationFlowManager $authenticationFlowManager, Config $customMessages, DeviceIdStore $deviceIdStore, UserRepository $userRepository) {
         $this->plugin = $plugin;
+        $this->authenticationService = $authenticationService;
+        $this->authenticationFlowManager = $authenticationFlowManager;
+        $this->customMessages = $customMessages;
+        $this->deviceIdStore = $deviceIdStore;
+        $this->userRepository = $userRepository;
     }
 
     /**
@@ -65,7 +80,7 @@ class PlayerSessionListener implements Listener {
             }
 
             if (isset($ipCounts[$ip]) && $ipCounts[$ip] >= $maxJoinsPerIp) {
-                $message = (string)(((array)$this->plugin->getCustomMessages()->get("messages"))["ip_join_limit_exceeded"] ?? "Connection limit exceeded for your IP address.");
+                $message = (string)(((array)$this->customMessages->get("messages"))["ip_join_limit_exceeded"] ?? "Connection limit exceeded for your IP address.");
                 $event->setKickFlag(PlayerPreLoginEvent::KICK_FLAG_BANNED, $message);
                 return;
             }
@@ -76,7 +91,7 @@ class PlayerSessionListener implements Listener {
 
         $extraData = $event->getPlayerInfo()->getExtraData();
         if(isset($extraData['DeviceId'])){
-            $this->plugin->getDeviceIds()[strtolower($name)] = $extraData['DeviceId'];
+            $this->deviceIdStore->getAll()[strtolower($name)] = $extraData['DeviceId'];
         }
 
         if (!(bool)($bruteforceConfig['kick_at_pre_login'] ?? true)) {
@@ -84,12 +99,12 @@ class PlayerSessionListener implements Listener {
         }
 
         Await::f2c(function () use ($name, $event, $bruteforceConfig) {
-            if (yield from $this->plugin->getUserRepository()->isLocked($name)) {
+            if (yield from $this->userRepository->isLocked($name)) {
                 $player->kick((string)($messages["account_locked_by_admin"] ?? "§cYour account has been locked by an administrator."));
                 return;
             }
 
-            $blockedUntil = yield from $this->plugin->getUserRepository()->getBlockedUntil($name);
+            $blockedUntil = yield from $this->userRepository->getBlockedUntil($name);
         });
     }
 
@@ -99,19 +114,19 @@ class PlayerSessionListener implements Listener {
      */
     public function onJoin(PlayerJoinEvent $event): void {
         $player = $event->getPlayer();
-        $authenticationService = $this->plugin->getAuthenticationService();
+        $authenticationService = $this->authenticationService;
 
         if ($authenticationService->isPlayerAuthenticated($player)) {
             return;
         }
 
-        $this->plugin->startAuthenticationStep($player);
+        $this->authenticationFlowManager->startAuthenticationFlow($player);
     }
 
     public function onPlayerQuit(PlayerQuitEvent $event): void {
         $lowerPlayerName = strtolower($event->getPlayer()->getName());
-        unset($this->plugin->getDeviceIds()[$lowerPlayerName]);
-        $this->plugin->getAuthenticationService()->handleQuit($event->getPlayer());
+        unset($this->deviceIdStore->getAll()[$lowerPlayerName]);
+        $this->authenticationService->handleQuit($event->getPlayer());
     }
 
     public function onPacketSend(DataPacketSendEvent $event): void {
@@ -141,7 +156,7 @@ class PlayerSessionListener implements Listener {
                 $playerName = $entry->username;
                 $player = $this->plugin->getServer()->getPlayerExact($playerName);
 
-                if ($player === null || !$this->plugin->getAuthenticationService()->isPlayerAuthenticated($player)) {
+                if ($player === null || !$this->authenticationService->isPlayerAuthenticated($player)) {
                     $hasChanges = true;
                     return;
                 }

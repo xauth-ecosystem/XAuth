@@ -27,8 +27,10 @@ declare(strict_types=1);
 
 namespace Luthfi\XAuth\Presentation\Listener;
 
+use Luthfi\XAuth\Application\Auth\AuthenticationService;
 use Luthfi\XAuth\Domain\Event\PlayerAuthActionEvent;
-use Luthfi\XAuth\Main;
+use pocketmine\plugin\PluginBase;
+use pocketmine\utils\Config;
 use pocketmine\event\block\BlockBreakEvent;
 use pocketmine\event\block\BlockPlaceEvent;
 use pocketmine\event\Cancellable;
@@ -49,14 +51,18 @@ use pocketmine\player\Player;
 
 class PlayerActionListener implements Listener {
 
-    private Main $plugin;
+    private PluginBase $plugin;
+    private AuthenticationService $authenticationService;
+    private Config $customMessages;
 
-    public function __construct(Main $plugin) {
+    public function __construct(PluginBase $plugin, AuthenticationService $authenticationService, Config $customMessages) {
         $this->plugin = $plugin;
+        $this->authenticationService = $authenticationService;
+        $this->customMessages = $customMessages;
     }
 
     private function handleAction(Player $player, string $actionType, Cancellable $event): void {
-        if ($this->plugin->getAuthenticationService()->isPlayerAuthenticated($player)) {
+        if ($this->authenticationService->isPlayerAuthenticated($player)) {
             return;
         }
 
@@ -87,7 +93,7 @@ class PlayerActionListener implements Listener {
 
         $allowAction = (bool)($restrictions[$configKey] ?? true); // Default to true if not set in config
 
-        if ($this->plugin->getAuthenticationService()->isForcingPasswordChange($player)) {
+        if ($this->authenticationService->isForcingPasswordChange($player)) {
             if (!$allowAction) {
                 $event->cancel();
                 return;
@@ -117,7 +123,7 @@ class PlayerActionListener implements Listener {
 
         $this->handleAction($player, PlayerAuthActionEvent::ACTION_CHAT, $event);
         if ($event->isCancelled()) {
-            $message = (string)(((array)$this->plugin->getCustomMessages()->get("messages"))["chat_not_allowed"] ?? "");
+            $message = (string)(((array)$this->customMessages->get("messages"))["chat_not_allowed"] ?? "");
             if (!empty($message)) {
                 $player->sendMessage($message);
             }
@@ -130,8 +136,8 @@ class PlayerActionListener implements Listener {
             return;
         }
 
-        if ($this->plugin->getAuthenticationService()->isForcingPasswordChange($player)) {
-            $message = (string)(((array)$this->plugin->getCustomMessages()->get("messages"))["force_change_password_prompt"] ?? "");
+        if ($this->authenticationService->isForcingPasswordChange($player)) {
+            $message = (string)(((array)$this->customMessages->get("messages"))["force_change_password_prompt"] ?? "");
             if (!empty($message)) {
                 $player->sendMessage($message);
             }
@@ -139,7 +145,7 @@ class PlayerActionListener implements Listener {
             return;
         }
 
-        if ($this->plugin->getAuthenticationService()->isPlayerAuthenticated($player)) {
+        if ($this->authenticationService->isPlayerAuthenticated($player)) {
             return;
         }
 
@@ -157,7 +163,7 @@ class PlayerActionListener implements Listener {
             return; // Allow other plugins to handle it
         }
 
-        $message = (string)(((array)$this->plugin->getCustomMessages()->get("messages"))["command_not_allowed"] ?? "");
+        $message = (string)(((array)$this->customMessages->get("messages"))["command_not_allowed"] ?? "");
         if (!empty($message)) {
             $player->sendMessage($message);
         }

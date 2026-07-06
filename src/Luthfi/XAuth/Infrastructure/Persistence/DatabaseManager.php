@@ -27,7 +27,7 @@ declare(strict_types=1);
 
 namespace Luthfi\XAuth\Infrastructure\Persistence;
 
-use Luthfi\XAuth\Main;
+use pocketmine\plugin\PluginBase;
 use Luthfi\XAuth\Domain\Session\SessionRepository;
 use Luthfi\XAuth\Domain\User\UserRepository;
 use poggit\libasynql\DataConnector;
@@ -39,7 +39,7 @@ class DatabaseManager {
     private UserRepository $userRepository;
     private SessionRepository $sessionRepository;
 
-    public function __construct(private Main $plugin, array $databaseConfig) {
+    public function __construct(private PluginBase $plugin, array $databaseConfig) {
         $type = (string)($databaseConfig['type'] ?? 'sqlite');
         $this->connector = ConnectorFactory::create($plugin, $type);
         

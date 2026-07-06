@@ -7,31 +7,43 @@ namespace Luthfi\XAuth\Application\Auth;
 use Generator;
 use Luthfi\XAuth\Application\Player\PlayerStateService;
 use Luthfi\XAuth\Domain\Player\VisibilityManager;
+use Luthfi\XAuth\Domain\User\UserRepository;
+use Luthfi\XAuth\Infrastructure\KickTaskManager;
 use Luthfi\XAuth\Presentation\Title\TitleService;
 use Luthfi\XAuth\Presentation\Form\FormManager;
 use pocketmine\player\Player;
+use pocketmine\plugin\PluginBase;
+use pocketmine\utils\Config;
 
 class LogoutUser {
+
+    private ?FormManager $formManager = null;
 
     public function __construct(
         private PlayerStateService $playerStateService,
         private VisibilityManager $playerVisibilityService,
         private TitleService $titleManager,
-        private FormManager $formManager,
-        private \Luthfi\XAuth\Main $plugin,
+        private PluginBase $plugin,
+        private KickTaskManager $kickTaskManager,
+        private UserRepository $userRepository,
+        private Config $customMessages,
     ) {}
 
+    public function setFormManager(FormManager $formManager): void {
+        $this->formManager = $formManager;
+    }
+
     public function handle(Player $player): Generator {
-        $this->plugin->cancelKickTask($player);
+        $this->kickTaskManager->cancel($player);
         $this->titleManager->clearTitle($player);
 
         $this->playerStateService->protectPlayer($player);
-        $this->plugin->scheduleKickTask($player);
+        $this->kickTaskManager->schedule($player);
 
-        $playerData = yield from $this->plugin->getUserRepository()->findByName($player->getName());
+        $playerData = yield from $this->userRepository->findByName($player->getName());
         if ($playerData !== null) {
             $formsEnabled = (bool)($this->plugin->getConfig()->getNested("forms.enabled") ?? true);
-            $message = (string)(((array)$this->plugin->getCustomMessages()->get("messages"))["login_prompt"] ?? "");
+            $message = (string)(((array)$this->customMessages->get("messages"))["login_prompt"] ?? "");
             $player->sendMessage($message);
             if ($formsEnabled) {
                 $this->formManager->sendLoginForm($player);
@@ -40,7 +52,7 @@ class LogoutUser {
             }
         } else {
             $formsEnabled = (bool)($this->plugin->getConfig()->getNested("forms.enabled") ?? true);
-            $message = (string)(((array)$this->plugin->getCustomMessages()->get("messages"))["register_prompt"] ?? "");
+            $message = (string)(((array)$this->customMessages->get("messages"))["register_prompt"] ?? "");
             $player->sendMessage($message);
             if ($formsEnabled) {
                 $this->formManager->sendRegisterForm($player);
@@ -51,7 +63,7 @@ class LogoutUser {
     }
 
     public function handleQuit(Player $player): void {
-        $this->plugin->cancelKickTask($player);
+        $this->kickTaskManager->cancel($player);
         $this->titleManager->clearTitle($player);
         $this->playerStateService->restorePlayerState($player);
     }

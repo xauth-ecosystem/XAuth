@@ -31,18 +31,18 @@ use Generator;
 use Luthfi\XAuth\Domain\User\UserRepository;
 use Luthfi\XAuth\Domain\Event\PlayerAuthenticationFailedEvent;
 use Luthfi\XAuth\Domain\Exception\PlayerBlockedException;
-use Luthfi\XAuth\Main;
 use pocketmine\player\Player;
+use pocketmine\plugin\PluginBase;
 
 class LoginRateLimiter {
 
-    private Main $plugin;
+    private PluginBase $plugin;
     private UserRepository $userRepository;
 
     /** @var array<string, array{attempts: int, last_attempt_time: int}> */
     private array $loginAttempts = [];
 
-    public function __construct(Main $plugin, UserRepository $userRepository) {
+    public function __construct(PluginBase $plugin, UserRepository $userRepository) {
         $this->plugin = $plugin;
         $this->userRepository = $userRepository;
     }

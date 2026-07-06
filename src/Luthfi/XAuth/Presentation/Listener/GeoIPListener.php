@@ -27,17 +27,17 @@ declare(strict_types=1);
 
 namespace Luthfi\XAuth\Presentation\Listener;
 
-use Luthfi\XAuth\Main;
 use pocketmine\event\Listener;
 use pocketmine\event\player\PlayerPreLoginEvent;
+use pocketmine\plugin\PluginBase;
+use pocketmine\utils\Config;
 
 class GeoIPListener implements Listener {
 
-    private Main $plugin;
-
-    public function __construct(Main $plugin) {
-        $this->plugin = $plugin;
-    }
+    public function __construct(
+        private PluginBase $plugin,
+        private Config $customMessages,
+    ) {}
 
     public function onPlayerPreLogin(PlayerPreLoginEvent $event): void {
         $geoipConfig = (array)$this->plugin->getConfig()->get('geoip');
@@ -49,13 +49,13 @@ class GeoIPListener implements Listener {
         if ($isLocal) {
             $isListed = in_array("LOCALHOST", $countryList, true);
             if (($mode === "blacklist" && $isListed) || ($mode === "whitelist" && !$isListed)) {
-                $message = (string)(((array)$this->plugin->getCustomMessages()->get("messages"))["geoip.kick.local"] ?? "Connections from local networks are not allowed.");
+                $message = (string)(((array)$this->customMessages->get("messages"))["geoip.kick.local"] ?? "Connections from local networks are not allowed.");
                 $event->setKickFlag(PlayerPreLoginEvent::KICK_FLAG_BANNED, $message);
             }
             return;
         }
 
-        $this->plugin->getServer()->getAsyncPool()->submitTask(new class($ip, $event->getPlayerInfo()->getUsername(), $geoipConfig, $this->plugin->getCustomMessages()->get("messages")) extends \pocketmine\scheduler\AsyncTask {
+        $this->plugin->getServer()->getAsyncPool()->submitTask(new class($ip, $event->getPlayerInfo()->getUsername(), $geoipConfig, $this->customMessages->get("messages")) extends \pocketmine\scheduler\AsyncTask {
             public function __construct(private string $ip, private string $username, private array $config, private array $messages) {}
 
             public function onRun(): void {

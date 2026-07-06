@@ -27,19 +27,16 @@ declare(strict_types=1);
 
 namespace Luthfi\XAuth\Infrastructure\Scheduler;
 
-use Luthfi\XAuth\Main;
 use pocketmine\player\Player;
 use pocketmine\scheduler\Task;
 
 class SendTitleTask extends Task {
 
-    private Main $plugin;
     private Player $player;
     private string $title;
     private string $subtitle;
 
-    public function __construct(Main $plugin, Player $player, string $title, string $subtitle) {
-        $this->plugin = $plugin;
+    public function __construct(Player $player, string $title, string $subtitle) {
         $this->player = $player;
         $this->title = $title;
         $this->subtitle = $subtitle;

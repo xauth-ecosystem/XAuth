@@ -30,7 +30,6 @@ namespace Luthfi\XAuth\Infrastructure\Network\Handler;
 use Closure;
 use JsonMapper;
 use JsonMapper_Exception;
-use Luthfi\XAuth\Main;
 use pocketmine\network\mcpe\handler\LoginPacketHandler;
 use pocketmine\network\mcpe\JwtException;
 use pocketmine\network\mcpe\JwtUtils;
@@ -40,17 +39,15 @@ use pocketmine\network\PacketHandlingException;
 use pocketmine\player\PlayerInfo;
 use pocketmine\player\XboxLivePlayerInfo;
 use pocketmine\Server;
+use pocketmine\utils\Config;
 use pocketmine\utils\TextFormat;
 use ReflectionClass;
 use ReflectionProperty;
 
 class WaterdogExtrasLoginPacketHandler extends LoginPacketHandler {
 
-    private Main $plugin;
-
-    public function __construct(Server $server, NetworkSession $session, string $Waterdog_XUID, string $Waterdog_IP, Main $plugin) {
-        $this->plugin = $plugin;
-        $messages = (array)$this->plugin->getCustomMessages()->get("messages", []);
+    public function __construct(Server $server, NetworkSession $session, string $Waterdog_XUID, string $Waterdog_IP, Config $customMessages) {
+        $messages = (array)$customMessages->get("messages", []);
 
         if ($server->getOnlineMode()) {
             $kickMessage = (string)($messages['waterdog_online_mode_kick'] ?? "This server is in online-mode and cannot accept logins from a proxy.");

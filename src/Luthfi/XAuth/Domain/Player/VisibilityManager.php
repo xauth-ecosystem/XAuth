@@ -27,20 +27,28 @@ declare(strict_types=1);
 
 namespace Luthfi\XAuth\Domain\Player;
 
-use Luthfi\XAuth\Main;
+use Luthfi\XAuth\Application\Auth\AuthenticationService;
 use pocketmine\entity\effect\EffectInstance;
 use pocketmine\entity\effect\VanillaEffects;
 use pocketmine\network\mcpe\NetworkBroadcastUtils;
 use pocketmine\network\mcpe\protocol\PlayerListPacket;
 use pocketmine\network\mcpe\protocol\types\PlayerListEntry;
 use pocketmine\player\Player;
+use pocketmine\plugin\PluginBase;
+use pocketmine\utils\Config;
 
 class VisibilityManager {
 
-    private Main $plugin;
+    private ?AuthenticationService $authenticationService = null;
 
-    public function __construct(Main $plugin) {
-        $this->plugin = $plugin;
+    public function __construct(
+        private PluginBase $plugin,
+        private Config $configData,
+        private Config $customMessages,
+    ) {}
+
+    public function setAuthenticationService(AuthenticationService $authenticationService): void {
+        $this->authenticationService = $authenticationService;
     }
 
     public function updatePlayerVisibility(Player $targetPlayer): void {
@@ -56,8 +64,8 @@ class VisibilityManager {
     }
 
     private function resolveVisibility(Player $observer, Player $subject): void {
-        $authenticationService = $this->plugin->getAuthenticationService();
-        $config = $this->plugin->getConfig();
+        $authenticationService = $this->authenticationService;
+        $config = $this->configData;
 
         $observerAuthenticated = $authenticationService->isPlayerAuthenticated($observer);
         $subjectAuthenticated = $authenticationService->isPlayerAuthenticated($subject);

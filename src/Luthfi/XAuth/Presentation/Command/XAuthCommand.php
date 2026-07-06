@@ -27,14 +27,20 @@ declare(strict_types=1);
 
 namespace Luthfi\XAuth\Presentation\Command;
 
+use Luthfi\XAuth\Application\Auth\AuthenticationService;
+use Luthfi\XAuth\Application\Session\SessionService;
+use Luthfi\XAuth\Application\User\RegistrationService;
 use Luthfi\XAuth\Domain\Exception\NotRegisteredException;
-use Luthfi\XAuth\Main;
+use Luthfi\XAuth\Infrastructure\MigrationManager;
+use Luthfi\XAuth\Infrastructure\PluginControlService;
 use pocketmine\command\Command;
 use pocketmine\command\CommandSender;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
 use pocketmine\player\Player;
+use pocketmine\plugin\PluginBase;
 use pocketmine\plugin\PluginOwned;
 use pocketmine\plugin\PluginOwnedTrait;
+use pocketmine\utils\Config;
 use SOFe\AwaitGenerator\Await;
 use Throwable;
 
@@ -42,9 +48,15 @@ class XAuthCommand extends Command implements PluginOwned {
     use PluginOwnedTrait;
 
     public function __construct(
-        private readonly Main $plugin
+        private readonly AuthenticationService $authenticationService,
+        private readonly RegistrationService $registrationService,
+        private readonly SessionService $sessionService,
+        private readonly PluginControlService $pluginControlService,
+        private readonly MigrationManager $migrationManager,
+        private readonly Config $customMessages,
+        private readonly PluginBase $plugin
     ) {
-        $messages = (array)$this->plugin->getCustomMessages()->get("messages");
+        $messages = (array)$this->customMessages->get("messages");
         parent::__construct(
             "xauth",
             (string)($messages["xauth_command_description"] ?? "XAuth admin commands" ),
@@ -58,7 +70,7 @@ class XAuthCommand extends Command implements PluginOwned {
             return false;
         }
 
-        $messages = (array)$this->plugin->getCustomMessages()->get("messages");
+        $messages = (array)$this->customMessages->get("messages");
 
         if (count($args) < 1) {
             $sender->sendMessage((string)($messages["xauth_command_usage"] ?? "§cUsage: /xauth <subcommand> [args]" ));
@@ -78,7 +90,7 @@ class XAuthCommand extends Command implements PluginOwned {
                 }
                 $playerName = (string)($args[0] ?? '' );
                 Await::g2c(
-                    $this->plugin->getAuthenticationService()->lockAccount($playerName),
+                    $this->authenticationService->lockAccount($playerName),
                     function() use ($sender, $playerName, $messages): void {
                         $sender->sendMessage(str_replace('{player_name}', $playerName, (string)($messages["xauth_player_locked"] ?? "§aPlayer {player_name} has been locked." )));
                     },
@@ -98,7 +110,7 @@ class XAuthCommand extends Command implements PluginOwned {
                 }
                 $playerName = (string)($args[0] ?? '' );
                 Await::g2c(
-                    $this->plugin->getAuthenticationService()->unlockAccount($playerName),
+                    $this->authenticationService->unlockAccount($playerName),
                     function() use ($sender, $playerName, $messages): void {
                         $sender->sendMessage(str_replace('{player_name}', $playerName, (string)($messages["xauth_player_unlocked"] ?? "§aPlayer {player_name} has been unlocked." )));
                     },
@@ -118,7 +130,7 @@ class XAuthCommand extends Command implements PluginOwned {
                 }
                 $playerName = (string)($args[0] ?? '' );
                 Await::g2c(
-                    $this->plugin->getAuthenticationService()->getPlayerLookupData($playerName),
+                    $this->authenticationService->getPlayerLookupData($playerName),
                     function(?array $playerData) use ($sender, $playerName, $messages): void {
                         if ($playerData === null) {
                             $sender->sendMessage(str_replace('{player_name}', $playerName, (string)($messages["player_not_registered"] ?? "§cPlayer {player_name} is not registered." )));
@@ -138,7 +150,7 @@ class XAuthCommand extends Command implements PluginOwned {
                 $playerName = (string)($args[0] ?? '' );
                 $newPassword = (string)($args[1] ?? '' );
                 Await::g2c(
-                    $this->plugin->getAuthenticationService()->setPlayerPassword($playerName, $newPassword),
+                    $this->authenticationService->setPlayerPassword($playerName, $newPassword),
                     function() use ($sender, $messages): void {
                         $sender->sendMessage((string)($messages["set_password_success"] ?? "§aPlayer password has been set successfully." ));
                     },
@@ -160,7 +172,7 @@ class XAuthCommand extends Command implements PluginOwned {
                 }
                 $playerName = (string)($args[0] ?? '' );
                 Await::g2c(
-                    $this->plugin->getRegistrationService()->unregisterPlayerByAdmin($playerName),
+                    $this->registrationService->unregisterPlayerByAdmin($playerName),
                     function() use ($sender, $messages): void {
                         $sender->sendMessage((string)($messages["unregister_success"] ?? "§aPlayer account has been unregistered successfully." ));
                     },
@@ -181,7 +193,7 @@ class XAuthCommand extends Command implements PluginOwned {
                 }
                 $playerName = (string)($args[0] ?? '' );
                 Await::g2c(
-                    $this->plugin->getAuthenticationService()->forcePasswordChangeByAdmin($playerName),
+                    $this->authenticationService->forcePasswordChangeByAdmin($playerName),
                     function() use ($sender, $playerName, $messages): void {
                         $sender->sendMessage(str_replace('{player_name}', $playerName, (string)($messages["xauth_forcepasswordchange_success"] ?? "§aPlayer {player_name} will be forced to change their password on next login." )));
                     },
@@ -207,7 +219,7 @@ class XAuthCommand extends Command implements PluginOwned {
                 $destinationProviderType = strtolower($args[1]);
 
                 try {
-                    $this->plugin->getMigrationManager()->migrate($sourceProviderType, $destinationProviderType);
+                    $this->migrationManager->migrate($sourceProviderType, $destinationProviderType);
                 } catch (Throwable $error) {
                     $sender->sendMessage((string)($messages["xauth_migration_unexpected_error_prefix"] ?? "§cAn unexpected error occurred during migration: " ) . $error->getMessage());
                 }
@@ -224,7 +236,7 @@ class XAuthCommand extends Command implements PluginOwned {
                         $header = str_replace("{count}", (string)count($onlinePlayers), (string)($messages["xauth_status_list_header"] ?? "§e--- Online Players ({count}) ---" ));
                         $sender->sendMessage($header);
                         foreach ($onlinePlayers as $player) {
-                            $status = $this->plugin->getAuthenticationService()->isPlayerAuthenticated($player) ? (string)($messages["xauth_status_authenticated"] ?? "§aAuthenticated" ) : (string)($messages["xauth_status_unauthenticated"] ?? "§eUnauthenticated" );
+                            $status = $this->authenticationService->isPlayerAuthenticated($player) ? (string)($messages["xauth_status_authenticated"] ?? "§aAuthenticated" ) : (string)($messages["xauth_status_unauthenticated"] ?? "§eUnauthenticated" );
                             $sender->sendMessage("§f- " . $player->getName() . ": " . $status);
                         }
                         break;
@@ -239,12 +251,12 @@ class XAuthCommand extends Command implements PluginOwned {
                             $sender->sendMessage((string)($messages["xauth_player_not_online"] ?? "§cPlayer not found." ));
                             return false;
                         }
-                        if (!$this->plugin->getAuthenticationService()->isPlayerAuthenticated($player)) {
+                        if (!$this->authenticationService->isPlayerAuthenticated($player)) {
                             $sender->sendMessage((string)($messages["xauth_player_not_authenticated"] ?? "§cPlayer is not authenticated." ));
                             return false;
                         }
                         Await::g2c(
-                            $this->plugin->getAuthenticationService()->handleLogout($player),
+                            $this->authenticationService->handleLogout($player),
                             fn() => $sender->sendMessage(str_replace("{player_name}", $player->getName(), (string)($messages["xauth_status_end_success"] ?? "§aSession for player {player_name} has been ended." )))
                         );
                         break;
@@ -259,7 +271,7 @@ class XAuthCommand extends Command implements PluginOwned {
                     return false;
                 }
                 $sessionSubCommand = strtolower((string)array_shift($args));
-                $sessionService = $this->plugin->getSessionService();
+                $sessionService = $this->sessionService;
                 switch ($sessionSubCommand) {
                     case "list":
                         $playerName = (string)($args[0] ?? ($sender instanceof Player ? $sender->getName() : "") );
@@ -331,7 +343,7 @@ class XAuthCommand extends Command implements PluginOwned {
                 }
                 break;
             case "reload":
-                $this->plugin->getPluginControlService()->reload();
+                $this->pluginControlService->reload();
                 $sender->sendMessage((string)($messages["xauth_reload_success"] ?? "§aXAuth configuration reloaded." ));
                 break;
             case "checkpassword":
@@ -342,7 +354,7 @@ class XAuthCommand extends Command implements PluginOwned {
                 $playerName = (string)($args[0] ?? '' );
                 $password = (string)($args[1] ?? '' );
                 Await::g2c(
-                    $this->plugin->getAuthenticationService()->checkPlayerPassword($playerName, $password),
+                    $this->authenticationService->checkPlayerPassword($playerName, $password),
                     function(bool $isValid) use ($sender, $playerName, $password): void {
                         $sender->sendMessage("§e--- Password Check for " . $playerName . " ---");
                         $sender->sendMessage("§fPassword to check: §e" . $password);

@@ -31,7 +31,10 @@ use Ifera\ScoreHud\event\PlayerTagUpdateEvent;
 use Ifera\ScoreHud\event\ServerTagsUpdateEvent;
 use Ifera\ScoreHud\scoreboard\ScoreTag;
 use Ifera\ScoreHud\ScoreHud;
-use Luthfi\XAuth\Main;
+use Luthfi\XAuth\Application\Auth\AuthenticationService;
+use Luthfi\XAuth\Domain\User\UserRepository;
+use pocketmine\plugin\PluginBase;
+use pocketmine\utils\Config;
 use Luthfi\XAuth\Domain\Event\PlayerAuthenticateEvent;
 use Luthfi\XAuth\Domain\Event\PlayerDeauthenticateEvent;
 use Luthfi\XAuth\Domain\Event\PlayerRegisterEvent;
@@ -45,10 +48,16 @@ use SOFe\AwaitGenerator\Await;
 class ScoreHudListener implements Listener {
     use SingletonTrait;
 
-    private Main $plugin;
+    private PluginBase $plugin;
+    private AuthenticationService $authenticationService;
+    private UserRepository $userRepository;
+    private Config $customMessages;
 
-    public function __construct(Main $plugin) {
+    public function __construct(AuthenticationService $authenticationService, UserRepository $userRepository, Config $customMessages, PluginBase $plugin) {
         $this->plugin = $plugin;
+        $this->authenticationService = $authenticationService;
+        $this->userRepository = $userRepository;
+        $this->customMessages = $customMessages;
         self::setInstance($this);
     }
 
@@ -58,12 +67,10 @@ class ScoreHudListener implements Listener {
             return;
         }
 
-        $plugin = $instance->plugin;
-
-        Await::f2c(function () use ($plugin, $player, $instance) {
-            $isAuthenticated = $plugin->getAuthenticationService()->isPlayerAuthenticated($player);
-            $isRegistered = yield from $plugin->getUserRepository()->exists($player->getName());
-            $isLocked = yield from $plugin->getUserRepository()->isLocked($player->getName());
+        Await::f2c(function () use ($instance, $player) {
+            $isAuthenticated = $instance->authenticationService->isPlayerAuthenticated($player);
+            $isRegistered = yield from $instance->userRepository->exists($player->getName());
+            $isLocked = yield from $instance->userRepository->isLocked($player->getName());
 
             (new PlayerTagUpdateEvent($player, new ScoreTag("xauth.is_authenticated", $instance->getScoreHudBooleanText("is_authenticated", $isAuthenticated))))->call();
             (new PlayerTagUpdateEvent($player, new ScoreTag("xauth.is_registered", $instance->getScoreHudBooleanText("is_registered", $isRegistered))))->call();
@@ -74,7 +81,7 @@ class ScoreHudListener implements Listener {
     private function getScoreHudBooleanText(string $tag, bool $value): string {
         $key = "scorehud_tags." . $tag . "." . ($value ? "true" : "false");
         $defaultValue = $value ? "Yes" : "No";
-        return (string)($this->plugin->getCustomMessages()->getNested($key) ?? $defaultValue);
+        return (string)($this->customMessages->getNested($key) ?? $defaultValue);
     }
 
     public static function updateGlobalTags(): void {
@@ -83,10 +90,8 @@ class ScoreHudListener implements Listener {
             return;
         }
 
-        $plugin = $instance->plugin;
-
-        $authenticatedPlayers = count($plugin->getAuthenticationService()->getAuthenticatedPlayers());
-        $unauthenticatedPlayers = count($plugin->getServer()->getOnlinePlayers()) - $authenticatedPlayers;
+        $authenticatedPlayers = count($instance->authenticationService->getAuthenticatedPlayers());
+        $unauthenticatedPlayers = count($instance->plugin->getServer()->getOnlinePlayers()) - $authenticatedPlayers;
 
         (new ServerTagsUpdateEvent([
             new ScoreTag("xauth.authenticated_players", (string)$authenticatedPlayers),
