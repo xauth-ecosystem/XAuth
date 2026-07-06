@@ -55,7 +55,6 @@ class XAuthRegisterStep implements AuthenticationStep, FinalizableStep {
         private ?UserRepository $userRepository,
         private KickTaskManager $kickTaskManager,
     ) {
-        parent::__construct();
     }
 
     public function getId(): string {
