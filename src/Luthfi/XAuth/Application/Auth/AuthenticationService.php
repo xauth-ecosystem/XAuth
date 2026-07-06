@@ -173,7 +173,10 @@ class AuthenticationService {
 
         if ($player !== null && $forceImmediate) {
             $this->startForcePasswordChange($player);
+            return $player;
         }
+
+        return null;
     }
 
     public function lockAccount(string $playerName): Generator {
