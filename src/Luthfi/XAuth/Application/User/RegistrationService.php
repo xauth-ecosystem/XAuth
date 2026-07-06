@@ -58,6 +58,6 @@ class RegistrationService {
     }
 
     public function unregisterPlayerByAdmin(string $playerName): Generator {
-        yield from $this->deleteUser->unregisterByAdmin($playerName);
+        return yield from $this->deleteUser->unregisterByAdmin($playerName);
     }
 }
