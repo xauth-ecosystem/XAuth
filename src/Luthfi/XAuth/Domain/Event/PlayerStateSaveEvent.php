@@ -25,25 +25,29 @@
 
 declare(strict_types=1);
 
-namespace Luthfi\XAuth\tasks;
+namespace Luthfi\XAuth\Domain\Event;
 
-use Luthfi\XAuth\Main;
-use pocketmine\scheduler\Task;
-use SOFe\AwaitGenerator\Await;
+use Luthfi\XAuth\PlayerState;
+use pocketmine\event\player\PlayerEvent;
+use pocketmine\player\Player;
 
-class CleanupSessionsTask extends Task {
+/**
+ * Called after a player's state (inventory, position, etc.) has been saved
+ * because they need to authenticate.
+ */
+class PlayerStateSaveEvent extends PlayerEvent {
 
-    private Main $plugin;
+    private PlayerState $state;
 
-    public function __construct(Main $plugin) {
-        $this->plugin = $plugin;
+    public function __construct(Player $player, PlayerState $state) {
+        $this->player = $player;
+        $this->state = $state;
     }
 
-    public function onRun(): void {
-        Await::f2c(function () {
-            $this->plugin->getLogger()->debug("Attempting to clean up expired sessions asynchronously.");
-            yield from $this->plugin->getSessionRepository()->cleanupExpired();
-            $this->plugin->getLogger()->debug("Cleaned up expired sessions.");
-        });
+    /**
+     * Returns a read-only copy of the state that was saved.
+     */
+    public function getState(): PlayerState {
+        return clone $this->state;
     }
 }

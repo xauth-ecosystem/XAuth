@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Luthfi\XAuth\Application\User;
 
 use Generator;
-use Luthfi\XAuth\event\PlayerRegisterEvent;
+use Luthfi\XAuth\Domain\Event\PlayerRegisterEvent;
 use Luthfi\XAuth\exception\AccountLockedException;
 use Luthfi\XAuth\exception\AlreadyRegisteredException;
 use Luthfi\XAuth\exception\PasswordMismatchException;

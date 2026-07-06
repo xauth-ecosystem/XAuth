@@ -9,7 +9,7 @@ use Luthfi\XAuth\Domain\User\User as DomainUser;
 use Luthfi\XAuth\Domain\User\Username;
 use Luthfi\XAuth\Domain\User\PasswordHash;
 use Luthfi\XAuth\Main;
-use Luthfi\XAuth\database\Queries;
+use Luthfi\XAuth\Infrastructure\Persistence\Queries;
 use pocketmine\player\OfflinePlayer;
 use pocketmine\player\Player;
 use poggit\libasynql\DataConnector;

@@ -27,8 +27,8 @@ declare(strict_types=1);
 
 namespace Luthfi\XAuth\service;
 
-use Luthfi\XAuth\event\PlayerStateRestoreEvent;
-use Luthfi\XAuth\event\PlayerStateSaveEvent;
+use Luthfi\XAuth\Domain\Event\PlayerStateRestoreEvent;
+use Luthfi\XAuth\Domain\Event\PlayerStateSaveEvent;
 use Luthfi\XAuth\Main;
 use Luthfi\XAuth\PlayerState;
 use pocketmine\entity\effect\EffectInstance;

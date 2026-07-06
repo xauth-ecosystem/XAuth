@@ -25,25 +25,25 @@
 
 declare(strict_types=1);
 
-namespace Luthfi\XAuth\event;
+namespace Luthfi\XAuth\Infrastructure\Scheduler;
 
-use pocketmine\event\player\PlayerEvent;
-use pocketmine\player\Player;
+use Luthfi\XAuth\Main;
+use pocketmine\scheduler\Task;
+use SOFe\AwaitGenerator\Await;
 
-/**
- * Called when a player is deauthenticated (logged out).
- * This can happen via the /logout command or when the player quits the server.
- */
-class PlayerDeauthenticateEvent extends PlayerEvent {
+class CleanupSessionsTask extends Task {
 
-    private bool $isQuit;
+    private Main $plugin;
 
-    public function __construct(Player $player, bool $isQuit = false) {
-        $this->player = $player;
-        $this->isQuit = $isQuit;
+    public function __construct(Main $plugin) {
+        $this->plugin = $plugin;
     }
 
-    public function isQuit(): bool {
-        return $this->isQuit;
+    public function onRun(): void {
+        Await::f2c(function () {
+            $this->plugin->getLogger()->debug("Attempting to clean up expired sessions asynchronously.");
+            yield from $this->plugin->getSessionRepository()->cleanupExpired();
+            $this->plugin->getLogger()->debug("Cleaned up expired sessions.");
+        });
     }
 }

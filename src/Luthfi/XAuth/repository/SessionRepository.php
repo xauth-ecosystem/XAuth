@@ -10,7 +10,7 @@ use Luthfi\XAuth\Domain\Session\Session;
 use Luthfi\XAuth\Domain\Session\SessionId;
 use Luthfi\XAuth\Domain\User\Username;
 use Luthfi\XAuth\Main;
-use Luthfi\XAuth\database\Queries;
+use Luthfi\XAuth\Infrastructure\Persistence\Queries;
 use poggit\libasynql\DataConnector;
 use poggit\libasynql\SqlError;
 

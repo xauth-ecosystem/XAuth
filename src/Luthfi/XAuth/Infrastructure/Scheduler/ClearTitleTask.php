@@ -25,7 +25,7 @@
 
 declare(strict_types=1);
 
-namespace Luthfi\XAuth\tasks;
+namespace Luthfi\XAuth\Infrastructure\Scheduler;
 
 use Luthfi\XAuth\Main;
 use pocketmine\player\Player;

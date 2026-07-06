@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Luthfi\XAuth\Application\Player;
 
-use Luthfi\XAuth\event\PlayerStateRestoreEvent;
+use Luthfi\XAuth\Domain\Event\PlayerStateRestoreEvent;
 use pocketmine\player\Player;
 
 class RestorePlayerState {

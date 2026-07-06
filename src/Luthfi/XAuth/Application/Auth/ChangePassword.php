@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Luthfi\XAuth\Application\Auth;
 
 use Generator;
-use Luthfi\XAuth\event\PlayerChangePasswordEvent;
+use Luthfi\XAuth\Domain\Event\PlayerChangePasswordEvent;
 use Luthfi\XAuth\exception\IncorrectPasswordException;
 use Luthfi\XAuth\exception\NotRegisteredException;
 use Luthfi\XAuth\exception\PasswordMismatchException;

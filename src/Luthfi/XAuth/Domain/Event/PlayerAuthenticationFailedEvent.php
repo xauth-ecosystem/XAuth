@@ -25,29 +25,32 @@
 
 declare(strict_types=1);
 
-namespace Luthfi\XAuth\event;
+namespace Luthfi\XAuth\Domain\Event;
 
-use Luthfi\XAuth\PlayerState;
+use pocketmine\event\Cancellable;
+use pocketmine\event\CancellableTrait;
 use pocketmine\event\player\PlayerEvent;
 use pocketmine\player\Player;
 
 /**
- * Called after a player's state (inventory, position, etc.) has been saved
- * because they need to authenticate.
+ * Called when a player fails to authenticate due to an incorrect password.
  */
-class PlayerStateSaveEvent extends PlayerEvent {
+class PlayerAuthenticationFailedEvent extends PlayerEvent implements Cancellable {
+    use CancellableTrait;
 
-    private PlayerState $state;
+    /** @var int */
+    private int $failedAttempts;
 
-    public function __construct(Player $player, PlayerState $state) {
+    public function __construct(Player $player, int $failedAttempts) {
         $this->player = $player;
-        $this->state = $state;
+        $this->failedAttempts = $failedAttempts;
     }
 
     /**
-     * Returns a read-only copy of the state that was saved.
+     * Returns the total number of failed login attempts for this player
+     * in the current session.
      */
-    public function getState(): PlayerState {
-        return clone $this->state;
+    public function getFailedAttempts(): int {
+        return $this->failedAttempts;
     }
 }

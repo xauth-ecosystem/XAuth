@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Luthfi\XAuth\service;
 
 use Luthfi\XAuth\Main;
-use Luthfi\XAuth\tasks\SendTitleTask;
+use Luthfi\XAuth\Infrastructure\Scheduler\SendTitleTask;
 use pocketmine\player\Player;
 use pocketmine\scheduler\TaskHandler;
 

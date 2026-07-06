@@ -27,7 +27,7 @@ declare(strict_types=1);
 
 namespace Luthfi\XAuth\Application\Auth\Pipeline\Steps;
 
-use Luthfi\XAuth\event\PlayerAuthenticateEvent;
+use Luthfi\XAuth\Domain\Event\PlayerAuthenticateEvent;
 use Luthfi\XAuth\Application\Auth\Pipeline\AuthenticationContext;
 use Luthfi\XAuth\Main;
 use pocketmine\player\Player;

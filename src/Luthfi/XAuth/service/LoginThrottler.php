@@ -29,7 +29,7 @@ namespace Luthfi\XAuth\service;
 
 use Generator;
 use Luthfi\XAuth\repository\UserRepository;
-use Luthfi\XAuth\event\PlayerAuthenticationFailedEvent;
+use Luthfi\XAuth\Domain\Event\PlayerAuthenticationFailedEvent;
 use Luthfi\XAuth\exception\PlayerBlockedException;
 use Luthfi\XAuth\Main;
 use pocketmine\player\Player;

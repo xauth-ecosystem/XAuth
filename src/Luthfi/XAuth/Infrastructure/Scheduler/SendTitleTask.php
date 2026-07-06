@@ -25,24 +25,29 @@
 
 declare(strict_types=1);
 
-namespace Luthfi\XAuth\event;
+namespace Luthfi\XAuth\Infrastructure\Scheduler;
 
-use pocketmine\event\Event;
-use pocketmine\player\IPlayer;
+use Luthfi\XAuth\Main;
+use pocketmine\player\Player;
+use pocketmine\scheduler\Task;
 
-/**
- * Called when a player unregisters their account.
- * Note: This event uses IPlayer, so the player may be offline when this is called.
- */
-class PlayerUnregisterEvent extends Event {
+class SendTitleTask extends Task {
 
-    protected IPlayer $player;
+    private Main $plugin;
+    private Player $player;
+    private string $title;
+    private string $subtitle;
 
-    public function __construct(IPlayer $player) {
+    public function __construct(Main $plugin, Player $player, string $title, string $subtitle) {
+        $this->plugin = $plugin;
         $this->player = $player;
+        $this->title = $title;
+        $this->subtitle = $subtitle;
     }
 
-    public function getPlayer(): IPlayer {
-        return $this->player;
+    public function onRun(): void {
+        if ($this->player->isOnline()) {
+            $this->player->sendTitle($this->title, $this->subtitle, 10, 40, 10);
+        }
     }
 }

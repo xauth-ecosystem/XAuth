@@ -25,17 +25,17 @@
 
 declare(strict_types=1);
 
-namespace Luthfi\XAuth\listener;
+namespace Luthfi\XAuth\Presentation\Listener;
 
 use Ifera\ScoreHud\event\PlayerTagUpdateEvent;
 use Ifera\ScoreHud\event\ServerTagsUpdateEvent;
 use Ifera\ScoreHud\scoreboard\ScoreTag;
 use Ifera\ScoreHud\ScoreHud;
 use Luthfi\XAuth\Main;
-use Luthfi\XAuth\event\PlayerAuthenticateEvent;
-use Luthfi\XAuth\event\PlayerDeauthenticateEvent;
-use Luthfi\XAuth\event\PlayerRegisterEvent;
-use Luthfi\XAuth\event\PlayerUnregisterEvent;
+use Luthfi\XAuth\Domain\Event\PlayerAuthenticateEvent;
+use Luthfi\XAuth\Domain\Event\PlayerDeauthenticateEvent;
+use Luthfi\XAuth\Domain\Event\PlayerRegisterEvent;
+use Luthfi\XAuth\Domain\Event\PlayerUnregisterEvent;
 use pocketmine\event\Listener;
 use pocketmine\event\player\PlayerJoinEvent;
 use pocketmine\player\Player;

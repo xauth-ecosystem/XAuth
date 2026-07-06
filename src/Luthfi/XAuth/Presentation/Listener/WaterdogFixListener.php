@@ -25,7 +25,7 @@
 
 declare(strict_types=1);
 
-namespace Luthfi\XAuth\listener;
+namespace Luthfi\XAuth\Presentation\Listener;
 
 use Luthfi\XAuth\Main;
 use Luthfi\XAuth\network\handler\WaterdogExtrasLoginPacketHandler;

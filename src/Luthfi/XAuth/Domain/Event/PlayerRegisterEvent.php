@@ -25,15 +25,15 @@
 
 declare(strict_types=1);
 
-namespace Luthfi\XAuth\event;
+namespace Luthfi\XAuth\Domain\Event;
 
 use pocketmine\event\player\PlayerEvent;
 use pocketmine\player\Player;
 
 /**
- * Called after a player successfully changes their password.
+ * Called when a player successfully registers an account.
  */
-class PlayerChangePasswordEvent extends PlayerEvent {
+class PlayerRegisterEvent extends PlayerEvent {
 
     public function __construct(Player $player) {
         $this->player = $player;

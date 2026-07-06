@@ -28,8 +28,8 @@ declare(strict_types=1);
 namespace Luthfi\XAuth\Presentation\Form;
 
 use jojoe77777\FormAPI\CustomForm;
-use Luthfi\XAuth\event\PlayerChangePasswordEvent;
-use Luthfi\XAuth\event\PlayerPreAuthenticateEvent;
+use Luthfi\XAuth\Domain\Event\PlayerChangePasswordEvent;
+use Luthfi\XAuth\Domain\Event\PlayerPreAuthenticateEvent;
 use Luthfi\XAuth\exception\AccountLockedException;
 use Luthfi\XAuth\exception\AlreadyLoggedInException;
 use Luthfi\XAuth\exception\AlreadyRegisteredException;

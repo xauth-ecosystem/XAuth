@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Luthfi\XAuth\database;
+namespace Luthfi\XAuth\Infrastructure\Persistence;
 
 use Luthfi\XAuth\Main;
-use Luthfi\XAuth\database\Queries;
+use Luthfi\XAuth\Infrastructure\Persistence\Queries;
 use poggit\libasynql\DataConnector;
 
 class SchemaManager {

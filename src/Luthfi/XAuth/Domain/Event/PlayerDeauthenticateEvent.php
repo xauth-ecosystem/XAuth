@@ -25,32 +25,25 @@
 
 declare(strict_types=1);
 
-namespace Luthfi\XAuth\event;
+namespace Luthfi\XAuth\Domain\Event;
 
-use pocketmine\event\Cancellable;
-use pocketmine\event\CancellableTrait;
 use pocketmine\event\player\PlayerEvent;
 use pocketmine\player\Player;
 
 /**
- * Called when a player fails to authenticate due to an incorrect password.
+ * Called when a player is deauthenticated (logged out).
+ * This can happen via the /logout command or when the player quits the server.
  */
-class PlayerAuthenticationFailedEvent extends PlayerEvent implements Cancellable {
-    use CancellableTrait;
+class PlayerDeauthenticateEvent extends PlayerEvent {
 
-    /** @var int */
-    private int $failedAttempts;
+    private bool $isQuit;
 
-    public function __construct(Player $player, int $failedAttempts) {
+    public function __construct(Player $player, bool $isQuit = false) {
         $this->player = $player;
-        $this->failedAttempts = $failedAttempts;
+        $this->isQuit = $isQuit;
     }
 
-    /**
-     * Returns the total number of failed login attempts for this player
-     * in the current session.
-     */
-    public function getFailedAttempts(): int {
-        return $this->failedAttempts;
+    public function isQuit(): bool {
+        return $this->isQuit;
     }
 }

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Luthfi\XAuth\Application\Player;
 
-use Luthfi\XAuth\event\PlayerStateSaveEvent;
+use Luthfi\XAuth\Domain\Event\PlayerStateSaveEvent;
 use Luthfi\XAuth\PlayerState;
 use Luthfi\XAuth\Main;
 use Luthfi\XAuth\service\PlayerVisibilityService;

@@ -7,7 +7,7 @@ namespace Luthfi\XAuth\service;
 use Generator;
 use Luthfi\XAuth\Application\User\DeleteUser;
 use Luthfi\XAuth\Application\User\RegisterUser;
-use Luthfi\XAuth\event\PlayerRegisterEvent;
+use Luthfi\XAuth\Domain\Event\PlayerRegisterEvent;
 use Luthfi\XAuth\exception\AccountLockedException;
 use Luthfi\XAuth\exception\AlreadyLoggedInException;
 use Luthfi\XAuth\exception\AlreadyRegisteredException;

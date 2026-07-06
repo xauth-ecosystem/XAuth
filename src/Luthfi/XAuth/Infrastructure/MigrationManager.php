@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Luthfi\XAuth\utils;
+namespace Luthfi\XAuth\Infrastructure;
 
-use Luthfi\XAuth\database\ConnectorFactory;
-use Luthfi\XAuth\database\SchemaManager;
+use Luthfi\XAuth\Infrastructure\Persistence\ConnectorFactory;
+use Luthfi\XAuth\Infrastructure\Persistence\SchemaManager;
 use Luthfi\XAuth\repository\UserRepository;
 use Luthfi\XAuth\Main;
 use pocketmine\utils\TextFormat;

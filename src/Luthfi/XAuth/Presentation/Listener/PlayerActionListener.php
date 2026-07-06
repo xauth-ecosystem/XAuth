@@ -25,9 +25,9 @@
 
 declare(strict_types=1);
 
-namespace Luthfi\XAuth\listener;
+namespace Luthfi\XAuth\Presentation\Listener;
 
-use Luthfi\XAuth\event\PlayerAuthActionEvent;
+use Luthfi\XAuth\Domain\Event\PlayerAuthActionEvent;
 use Luthfi\XAuth\Main;
 use pocketmine\event\block\BlockBreakEvent;
 use pocketmine\event\block\BlockPlaceEvent;

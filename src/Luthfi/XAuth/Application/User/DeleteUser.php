@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Luthfi\XAuth\Application\User;
 
 use Generator;
-use Luthfi\XAuth\event\PlayerUnregisterEvent;
+use Luthfi\XAuth\Domain\Event\PlayerUnregisterEvent;
 use Luthfi\XAuth\exception\ConfirmationExpiredException;
 use Luthfi\XAuth\exception\IncorrectPasswordException;
 use Luthfi\XAuth\exception\NotRegisteredException;

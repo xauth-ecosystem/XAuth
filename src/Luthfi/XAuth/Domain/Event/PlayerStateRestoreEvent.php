@@ -25,7 +25,7 @@
 
 declare(strict_types=1);
 
-namespace Luthfi\XAuth\event;
+namespace Luthfi\XAuth\Domain\Event;
 
 use Luthfi\XAuth\PlayerState;
 use pocketmine\event\Cancellable;

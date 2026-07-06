@@ -25,7 +25,7 @@
 
 declare(strict_types=1);
 
-namespace Luthfi\XAuth\event;
+namespace Luthfi\XAuth\Domain\Event;
 
 use pocketmine\event\Cancellable;
 use pocketmine\event\CancellableTrait;

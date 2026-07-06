@@ -25,7 +25,7 @@
 
 declare(strict_types=1);
 
-namespace Luthfi\XAuth\database;
+namespace Luthfi\XAuth\Infrastructure\Persistence;
 
 use Luthfi\XAuth\Main;
 use Luthfi\XAuth\repository\SessionRepository;
