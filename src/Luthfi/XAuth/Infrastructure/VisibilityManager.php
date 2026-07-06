@@ -25,7 +25,7 @@
 
 declare(strict_types=1);
 
-namespace Luthfi\XAuth\Domain\Player;
+namespace Luthfi\XAuth\Infrastructure;
 
 use Closure;
 use pocketmine\entity\effect\EffectInstance;
