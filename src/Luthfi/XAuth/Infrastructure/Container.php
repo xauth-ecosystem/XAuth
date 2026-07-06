@@ -15,7 +15,7 @@ use Luthfi\XAuth\Application\Session\TerminateSession;
 use Luthfi\XAuth\Application\User\RegisterUser;
 use Luthfi\XAuth\Application\User\DeleteUser;
 use Luthfi\XAuth\Domain\Auth\LoginRateLimiter;
-use Luthfi\XAuth\Domain\Player\VisibilityManager;
+use Luthfi\XAuth\Infrastructure\VisibilityManager;
 use Luthfi\XAuth\Domain\User\PasswordHasher;
 use Luthfi\XAuth\Domain\User\PasswordPolicy;
 use Luthfi\XAuth\Infrastructure\Persistence\DatabaseManager;
@@ -36,10 +36,10 @@ use Luthfi\XAuth\Presentation\Listener\WaterdogFixListener;
 use Luthfi\XAuth\Presentation\Title\TitleService;
 use Luthfi\XAuth\Domain\Session\SessionRepository;
 use Luthfi\XAuth\Domain\User\UserRepository;
-use Luthfi\XAuth\Application\Auth\AuthenticationService;
-use Luthfi\XAuth\Application\Player\PlayerStateService;
-use Luthfi\XAuth\Application\User\RegistrationService;
-use Luthfi\XAuth\Application\Session\SessionService;
+use Luthfi\XAuth\Application\Auth\AuthenticationFacade;
+use Luthfi\XAuth\Application\Player\PlayerStateFacade;
+use Luthfi\XAuth\Application\User\RegistrationFacade;
+use Luthfi\XAuth\Application\Session\SessionFacade;
 use Luthfi\XAuth\Application\Auth\Pipeline\AuthenticationFlowManager;
 use Luthfi\XAuth\Application\Auth\Pipeline\Steps\AutoLoginStep;
 use Luthfi\XAuth\Application\Auth\Pipeline\Steps\XAuthLoginStep;
@@ -54,10 +54,10 @@ class Container {
     private Config $languageMessages;
     private PasswordPolicy $passwordPolicy;
     private PasswordHasher $passwordHasher;
-    private AuthenticationService $authenticationService;
-    private RegistrationService $registrationService;
-    private SessionService $sessionService;
-    private PlayerStateService $playerStateService;
+    private AuthenticationFacade $authenticationService;
+    private RegistrationFacade $registrationService;
+    private SessionFacade $sessionService;
+    private PlayerStateFacade $playerStateService;
     private VisibilityManager $visibilityManager;
     private PluginControlService $pluginControlService;
     private MigrationManager $migrationManager;
@@ -91,7 +91,7 @@ class Container {
         $this->passwordHasher = new PasswordHasher($this->plugin);
         $this->passwordPolicy = new PasswordPolicy($this->plugin, $this->languageMessages);
         $this->loginRateLimiter = new LoginRateLimiter($this->plugin);
-        $this->playerStateService = new PlayerStateService($this->plugin);
+        $this->playerStateService = new PlayerStateFacade($this->plugin);
         $this->migrationManager = new MigrationManager($this->plugin, $this->languageMessages);
 
         // ─── Kick task manager (auth service set later) ──────────────
@@ -113,7 +113,7 @@ class Container {
         $createSession = new CreateSession($sessionRepository);
         $restoreSession = new RestoreSession($sessionRepository);
         $terminateSession = new TerminateSession($sessionRepository);
-        $this->sessionService = new SessionService($this->plugin, $restoreSession, $createSession, $terminateSession, $this->deviceIdStore);
+        $this->sessionService = new SessionFacade($this->plugin, $restoreSession, $createSession, $terminateSession, $this->deviceIdStore);
 
         $this->titleService = new TitleService($this->plugin, $this->configData, $this->languageMessages);
 
@@ -136,7 +136,7 @@ class Container {
 
         // ─── Authentication service ──────────────────────────────────
 
-        $this->authenticationService = new AuthenticationService(
+        $this->authenticationService = new AuthenticationFacade(
             $this->plugin,
             $userRepository,
             $sessionRepository,
@@ -157,7 +157,7 @@ class Container {
         // ─── Use cases with auth dependency ──────────────────────────
 
         $deleteUser = new DeleteUser($userRepository, $this->passwordHasher, $this->plugin, $this->languageMessages, $this->authenticationService);
-        $this->registrationService = new RegistrationService($this->plugin, $registerUser, $deleteUser, $this->authenticationService);
+        $this->registrationService = new RegistrationFacade($this->plugin, $registerUser, $deleteUser, $this->authenticationService);
 
         // ─── Services with auth dependency ───────────────────────────
 
