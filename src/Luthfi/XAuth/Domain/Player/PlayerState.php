@@ -25,7 +25,7 @@
 
 declare(strict_types=1);
 
-namespace Luthfi\XAuth;
+namespace Luthfi\XAuth\Domain\Player;
 
 use pocketmine\entity\effect\VanillaEffects;
 use pocketmine\player\GameMode;
