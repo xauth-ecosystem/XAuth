@@ -1,7 +1,9 @@
 # Configuration for XAuth
 
-# Available languages: en, id, ru, uk
-language: en
+# Default locale used for messages sent where no player locale is available
+# (e.g. console, kick messages, scheduled tasks).
+# Use an ICU locale identifier matching a file in resources/languages/ (e.g. en_US, uk_UA, ru_RU, id_ID).
+language: en_US
 
 # Enable titles on join
 enable_titles: true
