@@ -8,7 +8,6 @@ use Generator;
 use Luthfi\XAuth\exception\AccountLockedException;
 use Luthfi\XAuth\exception\IncorrectPasswordException;
 use Luthfi\XAuth\exception\NotRegisteredException;
-use Luthfi\XAuth\flow\AuthenticationContext;
 use Luthfi\XAuth\repository\UserRepository;
 use Luthfi\XAuth\PasswordHasher;
 use Luthfi\XAuth\service\LoginThrottler;
@@ -16,18 +15,10 @@ use pocketmine\player\Player;
 
 class LoginUser {
 
-    /** @var array<string, true> */
-    private array $authenticatedPlayers = [];
-
-    /** @var array<string, true> */
-    private array $forcePasswordChange = [];
-
     public function __construct(
         private UserRepository $userRepository,
         private PasswordHasher $passwordHasher,
         private LoginThrottler $loginThrottler,
-        private \Luthfi\XAuth\TitleManager $titleManager,
-        private \Luthfi\XAuth\FormManager $formManager,
     ) {}
 
     public function handle(Player $player, string $password): Generator {
@@ -53,35 +44,5 @@ class LoginUser {
         }
 
         $this->loginThrottler->reset($player);
-    }
-
-    public function authenticate(Player $player): void {
-        $this->authenticatedPlayers[strtolower($player->getName())] = true;
-        $this->loginThrottler->reset($player);
-    }
-
-    public function isAuthenticated(Player $player): bool {
-        return isset($this->authenticatedPlayers[strtolower($player->getName())]);
-    }
-
-    public function deauthenticate(Player $player): void {
-        unset($this->authenticatedPlayers[strtolower($player->getName())]);
-    }
-
-    public function getAuthenticatedPlayerNames(): array {
-        return array_keys($this->authenticatedPlayers);
-    }
-
-    public function startForcePasswordChange(Player $player): void {
-        $this->forcePasswordChange[strtolower($player->getName())] = true;
-        $this->formManager->sendForceChangePasswordForm($player);
-    }
-
-    public function stopForcePasswordChange(Player $player): void {
-        unset($this->forcePasswordChange[strtolower($player->getName())]);
-    }
-
-    public function isForcingPasswordChange(Player $player): bool {
-        return isset($this->forcePasswordChange[strtolower($player->getName())]);
     }
 }

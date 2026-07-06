@@ -28,6 +28,10 @@ declare(strict_types=1);
 namespace Luthfi\XAuth;
 
 use Ifera\ScoreHud\ScoreHud;
+use Luthfi\XAuth\Application\Auth\ChangePassword;
+use Luthfi\XAuth\Application\Auth\LoginUser;
+use Luthfi\XAuth\Application\Auth\LogoutUser;
+use Luthfi\XAuth\Application\Auth\VerifyPassword;
 use Luthfi\XAuth\commands\LoginCommand;
 use Luthfi\XAuth\commands\LogoutCommand;
 use Luthfi\XAuth\commands\RegisterCommand;
@@ -130,6 +134,17 @@ class Main extends PluginBase {
             $this->sessionService = new SessionService($this, $sessionRepository);
             $this->registrationService = new RegistrationService($this, $userRepository);
 
+            $loginUser = new LoginUser($userRepository, $this->passwordHasher, $this->loginThrottler);
+            $logoutUser = new LogoutUser(
+                $this->playerStateService,
+                $this->playerVisibilityService,
+                $this->titleManager,
+                $this->formManager,
+                $this
+            );
+            $changePassword = new ChangePassword($userRepository, $this->passwordHasher, $this);
+            $verifyPassword = new VerifyPassword($userRepository, $this->passwordHasher);
+
             $this->authenticationService = new AuthenticationService(
                 $this,
                 $userRepository,
@@ -140,7 +155,11 @@ class Main extends PluginBase {
                 $this->playerVisibilityService,
                 $this->titleManager,
                 $this->formManager,
-                $this->loginThrottler
+                $this->loginThrottler,
+                $loginUser,
+                $logoutUser,
+                $changePassword,
+                $verifyPassword
             );
 
         } catch (Throwable $e) {

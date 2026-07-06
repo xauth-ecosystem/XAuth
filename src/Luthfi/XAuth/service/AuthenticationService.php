@@ -1,41 +1,18 @@
 <?php
 
-/*
- *
- *  _          _   _     __  __  ____ _      __  __    _         _   _
- * | |   _   _| |_| |__ |  \/  |/ ___( )___  \ \/ /   / \  _   _| |_| |__
- * | |  | | | | __| '_ \| |\/| | |   |// __|  \  /   / _ \| | | | __| '_ \
- * | |__| |_| | |_| | | | |  | | |___  \__ \  /  \  / ___ \ |_| | |_| | | |
- * |_____\__,_|\__|_| |_|_|  |_|\____| |___/ /_/\_\/_/   \_\__,_|\__|_| |_|
- *
- * This program is free software: you can redistribute and/or modify
- * it under the terms of the CSSM Unlimited License v2.0.
- *
- * This license permits unlimited use, modification, and distribution
- * for any purpose while maintaining authorship attribution.
- *
- * The software is provided "as is" without warranty of any kind.
- *
- * @author LuthMC
- * @author Sergiy Chernega
- * @link https://chernega.eu.org/
- *
- *
- */
-
 declare(strict_types=1);
 
 namespace Luthfi\XAuth\service;
 
 use Generator;
+use Luthfi\XAuth\Application\Auth\ChangePassword;
+use Luthfi\XAuth\Application\Auth\LoginUser;
+use Luthfi\XAuth\Application\Auth\LogoutUser;
+use Luthfi\XAuth\Application\Auth\VerifyPassword;
 use Luthfi\XAuth\event\PlayerAuthenticateEvent;
-use Luthfi\XAuth\event\PlayerChangePasswordEvent;
 use Luthfi\XAuth\event\PlayerDeauthenticateEvent;
-use Luthfi\XAuth\exception\AccountLockedException;
 use Luthfi\XAuth\exception\AlreadyLoggedInException;
-use Luthfi\XAuth\exception\IncorrectPasswordException;
 use Luthfi\XAuth\exception\NotRegisteredException;
-use Luthfi\XAuth\exception\PasswordMismatchException;
 use Luthfi\XAuth\flow\AuthenticationContext;
 use Luthfi\XAuth\FormManager;
 use Luthfi\XAuth\Main;
@@ -58,6 +35,10 @@ class AuthenticationService {
     private TitleManager $titleManager;
     private FormManager $formManager;
     private LoginThrottler $loginThrottler;
+    private LoginUser $loginUser;
+    private LogoutUser $logoutUser;
+    private ChangePassword $changePassword;
+    private VerifyPassword $verifyPassword;
 
     /** @var array<string, bool> */
     private array $authenticatedPlayers = [];
@@ -75,7 +56,11 @@ class AuthenticationService {
         PlayerVisibilityService $playerVisibilityService,
         TitleManager $titleManager,
         FormManager $formManager,
-        LoginThrottler $loginThrottler
+        LoginThrottler $loginThrottler,
+        LoginUser $loginUser,
+        LogoutUser $logoutUser,
+        ChangePassword $changePassword,
+        VerifyPassword $verifyPassword
     ) {
         $this->plugin = $plugin;
         $this->userRepository = $userRepository;
@@ -87,6 +72,10 @@ class AuthenticationService {
         $this->titleManager = $titleManager;
         $this->formManager = $formManager;
         $this->loginThrottler = $loginThrottler;
+        $this->loginUser = $loginUser;
+        $this->logoutUser = $logoutUser;
+        $this->changePassword = $changePassword;
+        $this->verifyPassword = $verifyPassword;
     }
 
     public function finalizeAuthentication(Player $player, AuthenticationContext $context): Generator {
@@ -128,149 +117,30 @@ class AuthenticationService {
         }
 
         yield from $this->loginThrottler->checkStatus($player);
-
-        $playerData = yield from $this->userRepository->findByName($player->getName());
-        if ($playerData === null) {
-            throw new NotRegisteredException();
-        }
-
-        if ($playerData->isLocked()) {
-            throw new AccountLockedException();
-        }
-
-        $storedPasswordHash = $playerData->getPasswordHash()->value();
-
-        if (!$this->passwordHasher->verifyPassword($password, $storedPasswordHash)) {
-            yield from $this->loginThrottler->logFailure($player);
-            throw new IncorrectPasswordException();
-        }
-
-        if ($this->passwordHasher->needsRehash($storedPasswordHash)) {
-            $newHashedPassword = $this->passwordHasher->hashPassword($password);
-            yield from $this->userRepository->updatePassword($player, $newHashedPassword);
-        }
-
-        $this->loginThrottler->reset($player);
+        yield from $this->loginUser->handle($player, $password);
     }
 
     public function handleChangePasswordRequest(Player $player, string $oldPassword, string $newPassword, string $confirmNewPassword): Generator {
-        $playerData = yield from $this->userRepository->findByName($player->getName());
-        if ($playerData === null) {
-            throw new NotRegisteredException();
-        }
-
-        $currentHashedPassword = $playerData->getPasswordHash()->value();
-
-        if (!$this->passwordHasher->verifyPassword($oldPassword, $currentHashedPassword)) {
-            throw new IncorrectPasswordException();
-        }
-
-        if ($this->passwordHasher->needsRehash($currentHashedPassword)) {
-            $currentHashedPassword = $this->passwordHasher->hashPassword($oldPassword);
-            yield from $this->userRepository->updatePassword($player, $currentHashedPassword);
-        }
-
-        if (($message = $this->plugin->getPasswordValidator()->validatePassword($newPassword)) !== null) {
-            throw new InvalidCommandSyntaxException($message);
-        }
-
-        if ($newPassword !== $confirmNewPassword) {
-            throw new PasswordMismatchException();
-        }
-
-        $newHashedPassword = $this->passwordHasher->hashPassword($newPassword);
-        yield from $this->userRepository->updatePassword($player, $newHashedPassword);
-        (new PlayerChangePasswordEvent($player))->call();
+        yield from $this->changePassword->handleForPlayer($player, $oldPassword, $newPassword, $confirmNewPassword);
     }
 
     public function handleChangePasswordRequestByName(string $username, string $oldPassword, string $newPassword, string $confirmNewPassword): Generator {
-        $offlinePlayer = Server::getInstance()->getOfflinePlayer($username);
-        $playerData = yield from $this->userRepository->findByName($username);
-        if ($playerData === null) {
-            throw new NotRegisteredException();
-        }
-
-        $currentHashedPassword = $playerData->getPasswordHash()->value();
-
-        if (!$this->passwordHasher->verifyPassword($oldPassword, $currentHashedPassword)) {
-            throw new IncorrectPasswordException();
-        }
-
-        if ($this->passwordHasher->needsRehash($currentHashedPassword)) {
-            $currentHashedPassword = $this->passwordHasher->hashPassword($oldPassword);
-            yield from $this->userRepository->updatePassword($offlinePlayer, $currentHashedPassword);
-        }
-
-        if (($message = $this->plugin->getPasswordValidator()->validatePassword($newPassword)) !== null) {
-            throw new InvalidCommandSyntaxException($message);
-        }
-
-        if ($newPassword !== $confirmNewPassword) {
-            throw new PasswordMismatchException();
-        }
-
-        $newHashedPassword = $this->passwordHasher->hashPassword($newPassword);
-        yield from $this->userRepository->updatePassword($offlinePlayer, $newHashedPassword);
+        yield from $this->changePassword->handleForUsername($username, $oldPassword, $newPassword, $confirmNewPassword);
     }
 
     public function handleForceChangePasswordRequest(Player $player, string $newPassword, string $confirmNewPassword): Generator {
-        if (($message = $this->plugin->getPasswordValidator()->validatePassword($newPassword)) !== null) {
-            throw new InvalidCommandSyntaxException($message);
-        }
-
-        if ($newPassword !== $confirmNewPassword) {
-            throw new PasswordMismatchException();
-        }
-
-        $newHashedPassword = $this->passwordHasher->hashPassword($newPassword);
-        yield from $this->userRepository->updatePassword($player, $newHashedPassword);
-        yield from $this->userRepository->setMustChangePassword($player->getName(), false);
-        $this->stopForcePasswordChange($player);
-
-        (new PlayerChangePasswordEvent($player))->call();
+        yield from $this->changePassword->handleForceForPlayer($player, $newPassword, $confirmNewPassword);
     }
 
     public function handleLogout(Player $player): Generator {
-        $this->plugin->cancelKickTask($player);
-        $this->titleManager->clearTitle($player);
-
         $this->deauthenticatePlayer($player);
-
-        $this->playerStateService->protectPlayer($player);
-        $this->plugin->scheduleKickTask($player);
-
-        $playerData = yield from $this->userRepository->findByName($player->getName());
-        if ($playerData !== null) {
-            $formsEnabled = (bool)($this->plugin->getConfig()->getNested("forms.enabled") ?? true);
-            $message = (string)(((array)$this->plugin->getCustomMessages()->get("messages"))["login_prompt"] ?? "");
-            $player->sendMessage($message);
-            if ($formsEnabled) {
-                $this->formManager->sendLoginForm($player);
-            } else {
-                $this->titleManager->sendTitle($player, "login_prompt", null, true);
-            }
-        } else {
-            $formsEnabled = (bool)($this->plugin->getConfig()->getNested("forms.enabled") ?? true);
-            $message = (string)(((array)$this->plugin->getCustomMessages()->get("messages"))["register_prompt"] ?? "");
-            $player->sendMessage($message);
-            if ($formsEnabled) {
-                $this->formManager->sendRegisterForm($player);
-            } else {
-                $this->titleManager->sendTitle($player, "register_prompt", null, true);
-            }
-        }
-
+        yield from $this->logoutUser->handle($player);
         (new PlayerDeauthenticateEvent($player, false))->call();
     }
 
     public function handleQuit(Player $player): void {
-        $this->plugin->cancelKickTask($player);
-        $this->titleManager->clearTitle($player);
-
         $this->deauthenticatePlayer($player);
-
-        $this->playerStateService->restorePlayerState($player);
-
+        $this->logoutUser->handleQuit($player);
         (new PlayerDeauthenticateEvent($player, true))->call();
     }
 
@@ -331,13 +201,7 @@ class AuthenticationService {
     }
 
     public function checkPlayerPassword(string $playerName, string $password): Generator {
-        $playerData = yield from $this->userRepository->findByName($playerName);
-        if ($playerData === null) {
-            throw new NotRegisteredException();
-        }
-
-        $storedHash = $playerData->getPasswordHash()->value();
-        return $this->passwordHasher->verifyPassword($password, $storedHash);
+        return yield from $this->verifyPassword->check($playerName, $password);
     }
 
     public function getPlayerLookupData(string $playerName): Generator {
