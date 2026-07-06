@@ -60,7 +60,7 @@ class Container {
     private array $deviceIds = [];
 
     public function __construct(
-        private \Luthfi\XAuth\Infrastructure\PocketMine\XAuthPlugin $plugin,
+        private \Luthfi\XAuth\Main $plugin,
     ) {}
 
     public function boot(): void {
