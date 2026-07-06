@@ -8,6 +8,7 @@ use Generator;
 use Luthfi\XAuth\Application\Auth\ChangePassword;
 use Luthfi\XAuth\Application\Auth\LoginUser;
 use Luthfi\XAuth\Application\Auth\LogoutUser;
+use Luthfi\XAuth\Application\Auth\LogoutOutcome;
 use Luthfi\XAuth\Application\Auth\VerifyPassword;
 use Luthfi\XAuth\Domain\Event\PlayerAuthenticateEvent;
 use Luthfi\XAuth\Domain\Event\PlayerDeauthenticateEvent;
@@ -16,7 +17,6 @@ use Luthfi\XAuth\Domain\Exception\NotRegisteredException;
 use Luthfi\XAuth\Application\Auth\Pipeline\AuthenticationContext;
 use Luthfi\XAuth\Domain\User\PasswordPolicy;
 use Luthfi\XAuth\Infrastructure\KickTaskManager;
-use Luthfi\XAuth\Presentation\Form\FormManager;
 use Luthfi\XAuth\Application\Player\PlayerStateService;
 use Luthfi\XAuth\Application\Session\SessionService;
 use Luthfi\XAuth\Domain\Auth\LoginRateLimiter;
@@ -39,7 +39,6 @@ class AuthenticationService {
     private PlayerStateService $playerStateService;
     private VisibilityManager $playerVisibilityService;
     private TitleService $titleManager;
-    private ?FormManager $formManager = null;
     private LoginRateLimiter $loginThrottler;
     private LoginUser $loginUser;
     private LogoutUser $logoutUser;
@@ -81,10 +80,6 @@ class AuthenticationService {
         $this->logoutUser = $logoutUser;
         $this->changePassword = $changePassword;
         $this->verifyPassword = $verifyPassword;
-    }
-
-    public function setFormManager(FormManager $formManager): void {
-        $this->formManager = $formManager;
     }
 
     public function finalizeAuthentication(Player $player, AuthenticationContext $context): Generator {
@@ -143,8 +138,9 @@ class AuthenticationService {
 
     public function handleLogout(Player $player): Generator {
         $this->deauthenticatePlayer($player);
-        yield from $this->logoutUser->handle($player);
+        $outcome = yield from $this->logoutUser->handle($player);
         (new PlayerDeauthenticateEvent($player, false))->call();
+        return $outcome;
     }
 
     public function handleQuit(Player $player): void {
@@ -155,7 +151,6 @@ class AuthenticationService {
 
     public function startForcePasswordChange(Player $player): void {
         $this->forcePasswordChange[strtolower($player->getName())] = true;
-        $this->formManager->sendForceChangePasswordForm($player);
     }
 
     public function stopForcePasswordChange(Player $player): void {
