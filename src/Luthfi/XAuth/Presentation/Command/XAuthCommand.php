@@ -28,11 +28,13 @@ declare(strict_types=1);
 namespace Luthfi\XAuth\Presentation\Command;
 
 use Luthfi\XAuth\Application\Auth\AuthenticationService;
+use Luthfi\XAuth\Application\Auth\LogoutOutcome;
 use Luthfi\XAuth\Application\Session\SessionService;
 use Luthfi\XAuth\Application\User\RegistrationService;
 use Luthfi\XAuth\Domain\Exception\NotRegisteredException;
 use Luthfi\XAuth\Infrastructure\MigrationManager;
 use Luthfi\XAuth\Infrastructure\PluginControlService;
+use Luthfi\XAuth\Presentation\Form\FormManager;
 use pocketmine\command\Command;
 use pocketmine\command\CommandSender;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
@@ -53,6 +55,7 @@ class XAuthCommand extends Command implements PluginOwned {
         private readonly SessionService $sessionService,
         private readonly PluginControlService $pluginControlService,
         private readonly MigrationManager $migrationManager,
+        private readonly FormManager $formManager,
         private readonly Config $customMessages,
         private readonly PluginBase $plugin
     ) {
@@ -173,8 +176,11 @@ class XAuthCommand extends Command implements PluginOwned {
                 $playerName = (string)($args[0] ?? '' );
                 Await::g2c(
                     $this->registrationService->unregisterPlayerByAdmin($playerName),
-                    function() use ($sender, $messages): void {
+                    function(?Player $player) use ($sender, $messages): void {
                         $sender->sendMessage((string)($messages["unregister_success"] ?? "§aPlayer account has been unregistered successfully." ));
+                        if ($player !== null) {
+                            $this->formManager->promptAfterLogout($player, LogoutOutcome::NEW_USER);
+                        }
                     },
                     function(Throwable $e) use ($sender, $playerName, $messages): void {
                         if ($e instanceof NotRegisteredException) {
@@ -194,8 +200,11 @@ class XAuthCommand extends Command implements PluginOwned {
                 $playerName = (string)($args[0] ?? '' );
                 Await::g2c(
                     $this->authenticationService->forcePasswordChangeByAdmin($playerName),
-                    function() use ($sender, $playerName, $messages): void {
+                    function(?Player $player) use ($sender, $playerName, $messages): void {
                         $sender->sendMessage(str_replace('{player_name}', $playerName, (string)($messages["xauth_forcepasswordchange_success"] ?? "§aPlayer {player_name} will be forced to change their password on next login." )));
+                        if ($player !== null) {
+                            $this->formManager->sendForceChangePasswordForm($player);
+                        }
                     },
                     function(Throwable $e) use ($sender, $playerName, $messages): void {
                         if ($e instanceof NotRegisteredException) {
@@ -257,7 +266,10 @@ class XAuthCommand extends Command implements PluginOwned {
                         }
                         Await::g2c(
                             $this->authenticationService->handleLogout($player),
-                            fn() => $sender->sendMessage(str_replace("{player_name}", $player->getName(), (string)($messages["xauth_status_end_success"] ?? "§aSession for player {player_name} has been ended." )))
+                            function(LogoutOutcome $outcome) use ($sender, $player, $messages): void {
+                                $sender->sendMessage(str_replace("{player_name}", $player->getName(), (string)($messages["xauth_status_end_success"] ?? "§aSession for player {player_name} has been ended." )));
+                                $this->formManager->promptAfterLogout($player, $outcome);
+                            }
                         );
                         break;
                     default:
