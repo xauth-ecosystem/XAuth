@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Luthfi\XAuth\Application\User;
 
 use Generator;
-use Luthfi\XAuth\Application\Auth\AuthenticationService;
+use Luthfi\XAuth\Application\Auth\AuthenticationFacade;
 use Luthfi\XAuth\Application\User\DeleteUser;
 use Luthfi\XAuth\Application\User\RegisterUser;
 use Luthfi\XAuth\Domain\Event\PlayerRegisterEvent;
@@ -23,7 +23,7 @@ use pocketmine\player\Player;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
 use pocketmine\plugin\PluginBase;
 
-class RegistrationService {
+class RegistrationFacade {
 
     private RegisterUser $registerUser;
     private DeleteUser $deleteUser;
@@ -35,7 +35,7 @@ class RegistrationService {
         private PluginBase $plugin,
         RegisterUser $registerUser,
         DeleteUser $deleteUser,
-        private AuthenticationService $authenticationService,
+        private AuthenticationFacade $authenticationService,
     ) {
         $this->registerUser = $registerUser;
         $this->deleteUser = $deleteUser;
