@@ -13,7 +13,7 @@ use Luthfi\XAuth\Infrastructure\DeviceIdStore;
 use pocketmine\player\Player;
 use pocketmine\plugin\PluginBase;
 
-class SessionService {
+class SessionFacade {
 
     public function __construct(
         private PluginBase $plugin,
