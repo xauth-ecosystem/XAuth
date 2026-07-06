@@ -28,7 +28,7 @@ declare(strict_types=1);
 namespace Luthfi\XAuth\Presentation\Command;
 
 use Luthfi\XAuth\Application\Auth\Pipeline\AuthenticationFlowManager;
-use Luthfi\XAuth\Application\User\RegistrationService;
+use Luthfi\XAuth\Application\User\RegistrationFacade;
 use Luthfi\XAuth\Domain\Event\PlayerPreAuthenticateEvent;
 use Luthfi\XAuth\Domain\Exception\AccountLockedException;
 use Luthfi\XAuth\Domain\Exception\AlreadyLoggedInException;
@@ -50,7 +50,7 @@ class RegisterCommand extends Command implements PluginOwned {
     use PluginOwnedTrait;
 
     public function __construct(
-        private readonly RegistrationService $registrationService,
+        private readonly RegistrationFacade $registrationService,
         private readonly AuthenticationFlowManager $authenticationFlowManager,
         private readonly Config $customMessages,
         private readonly PluginBase $plugin
