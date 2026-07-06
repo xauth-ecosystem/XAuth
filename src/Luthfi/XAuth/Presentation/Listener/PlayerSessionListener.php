@@ -76,7 +76,7 @@ class PlayerSessionListener implements Listener {
 
         $extraData = $event->getPlayerInfo()->getExtraData();
         if(isset($extraData['DeviceId'])){
-            $this->plugin->deviceIds[strtolower($name)] = $extraData['DeviceId'];
+            $this->plugin->getDeviceIds()[strtolower($name)] = $extraData['DeviceId'];
         }
 
         if (!(bool)($bruteforceConfig['kick_at_pre_login'] ?? true)) {
@@ -110,7 +110,7 @@ class PlayerSessionListener implements Listener {
 
     public function onPlayerQuit(PlayerQuitEvent $event): void {
         $lowerPlayerName = strtolower($event->getPlayer()->getName());
-        unset($this->plugin->deviceIds[$lowerPlayerName]);
+        unset($this->plugin->getDeviceIds()[$lowerPlayerName]);
         $this->plugin->getAuthenticationService()->handleQuit($event->getPlayer());
     }
 

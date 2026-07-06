@@ -43,7 +43,7 @@ class ClearTitleTask extends Task {
 
     public function onRun(): void {
         if ($this->player->isOnline()) {
-            $this->plugin->clearTitleTask($this->player);
+            $this->plugin->getTitleService()->clearTitle($this->player);
         }
     }
 }

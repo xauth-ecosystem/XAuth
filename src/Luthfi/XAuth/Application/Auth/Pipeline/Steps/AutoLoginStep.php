@@ -61,7 +61,7 @@ class AutoLoginStep implements AuthenticationStep, FinalizableStep {
                     }
 
                     $ipMatch = $sessionData->getIpAddress() === $ip;
-                    $deviceId = $this->plugin->deviceIds[strtolower($playerName)] ?? null;
+                    $deviceId = $this->plugin->getDeviceIds()[strtolower($playerName)] ?? null;
                     $deviceIdMatch = $sessionData->getDeviceId()->value() === $deviceId;
 
                     if (($securityLevel === 1 && $ipMatch && $deviceIdMatch) || ($securityLevel === 0 && $ipMatch)) {

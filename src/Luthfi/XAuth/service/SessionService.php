@@ -28,7 +28,7 @@ class SessionService {
 
         if (!empty($sessions)) {
             $ip = $player->getNetworkSession()->getIp();
-            $deviceId = (string)($this->plugin->deviceIds[$player->getName()] ?? "");
+            $deviceId = (string)($this->plugin->getDeviceIds()[$player->getName()] ?? "");
             $matchingSessionId = $this->restoreSession->findMatching($sessions, $ip, $deviceId, $securityLevel);
 
             if ($matchingSessionId !== null) {
@@ -44,7 +44,7 @@ class SessionService {
 
         yield from $this->createSession->enforceLimit($player, $maxSessions);
         $lifetime = (int)($this->plugin->getConfig()->getNested("auto-login.session-lifetime") ?? 86400);
-        $deviceId = (string)($this->plugin->deviceIds[$player->getName()] ?? "");
+        $deviceId = (string)($this->plugin->getDeviceIds()[$player->getName()] ?? "");
         yield from $this->createSession->create($player, $deviceId, $lifetime);
         return false;
     }
