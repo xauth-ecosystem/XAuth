@@ -76,14 +76,14 @@ class Container {
         // ─── Resources ───────────────────────────────────────────────
 
         $this->plugin->saveDefaultConfig();
-        $this->plugin->saveResource("lang/en.yml");
-        $this->plugin->saveResource("lang/id.yml");
-        $this->plugin->saveResource("lang/ru.yml");
-        $this->plugin->saveResource("lang/uk.yml");
+        $this->plugin->saveResource("languages/en_US.yml");
+        $this->plugin->saveResource("languages/id_ID.yml");
+        $this->plugin->saveResource("languages/ru_RU.yml");
+        $this->plugin->saveResource("languages/uk_UA.yml");
 
         $this->configData = $this->plugin->getConfig();
-        $language = (string)$this->configData->get("language", "en");
-        $this->languageMessages = new Config($this->plugin->getDataFolder() . "lang/" . $language . ".yml", Config::YAML);
+        $language = (string)$this->configData->get("language", "en_US");
+        $this->languageMessages = new Config($this->plugin->getDataFolder() . "languages/" . $language . ".yml", Config::YAML);
 
         // ─── Simple services (no dependencies) ───────────────────────
 
