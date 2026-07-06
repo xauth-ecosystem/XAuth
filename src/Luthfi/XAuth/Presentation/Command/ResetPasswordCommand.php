@@ -27,7 +27,7 @@ declare(strict_types=1);
 
 namespace Luthfi\XAuth\Presentation\Command;
 
-use Luthfi\XAuth\Application\Auth\AuthenticationService;
+use Luthfi\XAuth\Application\Auth\AuthenticationFacade;
 use Luthfi\XAuth\Domain\Exception\IncorrectPasswordException;
 use Luthfi\XAuth\Domain\Exception\NotRegisteredException;
 use Luthfi\XAuth\Domain\Exception\PasswordMismatchException;
@@ -47,7 +47,7 @@ class ResetPasswordCommand extends Command implements PluginOwned {
     use PluginOwnedTrait;
 
     public function __construct(
-        private readonly AuthenticationService $authenticationService,
+        private readonly AuthenticationFacade $authenticationService,
         private readonly FormManager $formManager,
         private readonly Config $customMessages,
         private readonly PluginBase $plugin
