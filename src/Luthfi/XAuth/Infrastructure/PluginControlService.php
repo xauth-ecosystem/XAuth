@@ -28,7 +28,7 @@ declare(strict_types=1);
 namespace Luthfi\XAuth\Infrastructure;
 
 use Closure;
-use Luthfi\XAuth\Domain\Player\VisibilityManager;
+use Luthfi\XAuth\Infrastructure\VisibilityManager;
 use pocketmine\plugin\PluginBase;
 use pocketmine\utils\Config;
 
