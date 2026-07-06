@@ -44,7 +44,6 @@ use Luthfi\XAuth\Application\Auth\Pipeline\AuthenticationFlowManager;
 use Luthfi\XAuth\Application\Auth\Pipeline\Steps\AutoLoginStep;
 use Luthfi\XAuth\Application\Auth\Pipeline\Steps\XAuthLoginStep;
 use Luthfi\XAuth\Application\Auth\Pipeline\Steps\XAuthRegisterStep;
-use Luthfi\XAuth\Infrastructure\Language\LanguageAdapter;
 use ChernegaSergiy\Language\TranslatorInterface;
 use ChernegaSergiy\Language\PluginTranslator;
 use pocketmine\plugin\PluginBase;
