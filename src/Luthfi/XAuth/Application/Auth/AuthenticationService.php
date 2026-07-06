@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Luthfi\XAuth\service;
+namespace Luthfi\XAuth\Application\Auth;
 
 use Generator;
 use Luthfi\XAuth\Application\Auth\ChangePassword;
@@ -11,14 +11,19 @@ use Luthfi\XAuth\Application\Auth\LogoutUser;
 use Luthfi\XAuth\Application\Auth\VerifyPassword;
 use Luthfi\XAuth\Domain\Event\PlayerAuthenticateEvent;
 use Luthfi\XAuth\Domain\Event\PlayerDeauthenticateEvent;
-use Luthfi\XAuth\exception\AlreadyLoggedInException;
-use Luthfi\XAuth\exception\NotRegisteredException;
+use Luthfi\XAuth\Domain\Exception\AlreadyLoggedInException;
+use Luthfi\XAuth\Domain\Exception\NotRegisteredException;
 use Luthfi\XAuth\Application\Auth\Pipeline\AuthenticationContext;
 use Luthfi\XAuth\Presentation\Form\FormManager;
 use Luthfi\XAuth\Main;
+use Luthfi\XAuth\Application\Player\PlayerStateService;
+use Luthfi\XAuth\Application\Session\SessionService;
+use Luthfi\XAuth\Domain\Auth\LoginRateLimiter;
+use Luthfi\XAuth\Domain\Player\VisibilityManager;
 use Luthfi\XAuth\Domain\User\PasswordHasher;
-use Luthfi\XAuth\repository\SessionRepository;
-use Luthfi\XAuth\repository\UserRepository;
+use Luthfi\XAuth\Domain\Session\SessionRepository;
+use Luthfi\XAuth\Domain\User\UserRepository;
+use Luthfi\XAuth\Presentation\Title\TitleService;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
 use pocketmine\player\Player;
 use pocketmine\Server;

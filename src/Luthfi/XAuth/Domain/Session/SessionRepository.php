@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Luthfi\XAuth\repository;
+namespace Luthfi\XAuth\Domain\Session;
 
 use Generator;
 use Luthfi\XAuth\Domain\Session\DeviceId;

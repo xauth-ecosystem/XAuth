@@ -27,9 +27,9 @@ declare(strict_types=1);
 
 namespace Luthfi\XAuth\Presentation\Command;
 
-use Luthfi\XAuth\exception\ConfirmationExpiredException;
-use Luthfi\XAuth\exception\IncorrectPasswordException;
-use Luthfi\XAuth\exception\UnregistrationNotInitiatedException;
+use Luthfi\XAuth\Domain\Exception\ConfirmationExpiredException;
+use Luthfi\XAuth\Domain\Exception\IncorrectPasswordException;
+use Luthfi\XAuth\Domain\Exception\UnregistrationNotInitiatedException;
 use Luthfi\XAuth\Main;
 use pocketmine\command\Command;
 use pocketmine\command\CommandSender;

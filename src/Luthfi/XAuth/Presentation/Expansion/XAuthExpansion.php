@@ -25,7 +25,7 @@
 
 declare(strict_types=1);
 
-namespace Luthfi\XAuth\expansion;
+namespace Luthfi\XAuth\Presentation\Expansion;
 
 use Luthfi\XAuth\Main;
 use MohamadRZ4\Placeholder\expansion\PlaceholderExpansion;

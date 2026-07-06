@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Luthfi\XAuth\Application\Auth;
 
 use Generator;
-use Luthfi\XAuth\service\PlayerStateService;
+use Luthfi\XAuth\Application\Player\PlayerStateService;
 use Luthfi\XAuth\Domain\Player\VisibilityManager;
 use Luthfi\XAuth\Presentation\Title\TitleService;
 use Luthfi\XAuth\Presentation\Form\FormManager;

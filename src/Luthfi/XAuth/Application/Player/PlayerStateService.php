@@ -25,7 +25,7 @@
 
 declare(strict_types=1);
 
-namespace Luthfi\XAuth\service;
+namespace Luthfi\XAuth\Application\Player;
 
 use Luthfi\XAuth\Domain\Event\PlayerStateRestoreEvent;
 use Luthfi\XAuth\Domain\Event\PlayerStateSaveEvent;

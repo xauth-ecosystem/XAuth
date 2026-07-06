@@ -28,7 +28,7 @@ declare(strict_types=1);
 namespace Luthfi\XAuth\Presentation\Listener;
 
 use Luthfi\XAuth\Main;
-use Luthfi\XAuth\network\handler\WaterdogExtrasLoginPacketHandler;
+use Luthfi\XAuth\Infrastructure\Network\Handler\WaterdogExtrasLoginPacketHandler;
 use pocketmine\event\Listener;
 use pocketmine\event\server\DataPacketReceiveEvent;
 use pocketmine\network\mcpe\JwtException;

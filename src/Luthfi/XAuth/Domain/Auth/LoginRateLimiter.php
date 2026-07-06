@@ -28,9 +28,9 @@ declare(strict_types=1);
 namespace Luthfi\XAuth\Domain\Auth;
 
 use Generator;
-use Luthfi\XAuth\repository\UserRepository;
+use Luthfi\XAuth\Domain\User\UserRepository;
 use Luthfi\XAuth\Domain\Event\PlayerAuthenticationFailedEvent;
-use Luthfi\XAuth\exception\PlayerBlockedException;
+use Luthfi\XAuth\Domain\Exception\PlayerBlockedException;
 use Luthfi\XAuth\Main;
 use pocketmine\player\Player;
 

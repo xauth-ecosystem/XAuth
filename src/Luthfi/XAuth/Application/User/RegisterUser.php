@@ -6,11 +6,11 @@ namespace Luthfi\XAuth\Application\User;
 
 use Generator;
 use Luthfi\XAuth\Domain\Event\PlayerRegisterEvent;
-use Luthfi\XAuth\exception\AccountLockedException;
-use Luthfi\XAuth\exception\AlreadyRegisteredException;
-use Luthfi\XAuth\exception\PasswordMismatchException;
-use Luthfi\XAuth\exception\RegistrationRateLimitException;
-use Luthfi\XAuth\repository\UserRepository;
+use Luthfi\XAuth\Domain\Exception\AccountLockedException;
+use Luthfi\XAuth\Domain\Exception\AlreadyRegisteredException;
+use Luthfi\XAuth\Domain\Exception\PasswordMismatchException;
+use Luthfi\XAuth\Domain\Exception\RegistrationRateLimitException;
+use Luthfi\XAuth\Domain\User\UserRepository;
 use Luthfi\XAuth\Domain\User\PasswordHasher;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
 use pocketmine\player\Player;

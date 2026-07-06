@@ -28,11 +28,11 @@ declare(strict_types=1);
 namespace Luthfi\XAuth\Presentation\Command;
 
 use Luthfi\XAuth\Domain\Event\PlayerPreAuthenticateEvent;
-use Luthfi\XAuth\exception\AccountLockedException;
-use Luthfi\XAuth\exception\AlreadyLoggedInException;
-use Luthfi\XAuth\exception\IncorrectPasswordException;
-use Luthfi\XAuth\exception\NotRegisteredException;
-use Luthfi\XAuth\exception\PlayerBlockedException;
+use Luthfi\XAuth\Domain\Exception\AccountLockedException;
+use Luthfi\XAuth\Domain\Exception\AlreadyLoggedInException;
+use Luthfi\XAuth\Domain\Exception\IncorrectPasswordException;
+use Luthfi\XAuth\Domain\Exception\NotRegisteredException;
+use Luthfi\XAuth\Domain\Exception\PlayerBlockedException;
 use Luthfi\XAuth\Main;
 use pocketmine\command\Command;
 use pocketmine\command\CommandSender;

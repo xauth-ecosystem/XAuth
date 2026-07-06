@@ -25,7 +25,7 @@
 
 declare(strict_types=1);
 
-namespace Luthfi\XAuth\service;
+namespace Luthfi\XAuth\Infrastructure;
 
 use Luthfi\XAuth\Main;
 use pocketmine\utils\Config;

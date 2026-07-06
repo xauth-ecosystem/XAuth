@@ -27,7 +27,7 @@ declare(strict_types=1);
 
 namespace Luthfi\XAuth\Presentation\Command;
 
-use Luthfi\XAuth\exception\NotRegisteredException;
+use Luthfi\XAuth\Domain\Exception\NotRegisteredException;
 use Luthfi\XAuth\Main;
 use pocketmine\command\Command;
 use pocketmine\command\CommandSender;

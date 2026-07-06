@@ -27,9 +27,9 @@ declare(strict_types=1);
 
 namespace Luthfi\XAuth\Presentation\Command;
 
-use Luthfi\XAuth\exception\IncorrectPasswordException;
-use Luthfi\XAuth\exception\NotRegisteredException;
-use Luthfi\XAuth\exception\PasswordMismatchException;
+use Luthfi\XAuth\Domain\Exception\IncorrectPasswordException;
+use Luthfi\XAuth\Domain\Exception\NotRegisteredException;
+use Luthfi\XAuth\Domain\Exception\PasswordMismatchException;
 use Luthfi\XAuth\Main;
 use pocketmine\command\Command;
 use pocketmine\command\CommandSender;

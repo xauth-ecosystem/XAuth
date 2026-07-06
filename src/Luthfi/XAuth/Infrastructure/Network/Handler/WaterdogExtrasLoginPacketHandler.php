@@ -25,7 +25,7 @@
 
 declare(strict_types=1);
 
-namespace Luthfi\XAuth\network\handler;
+namespace Luthfi\XAuth\Infrastructure\Network\Handler;
 
 use Closure;
 use JsonMapper;

@@ -25,7 +25,7 @@
 
 declare(strict_types=1);
 
-namespace Luthfi\XAuth\exception;
+namespace Luthfi\XAuth\Domain\Exception;
 
-class AccountLockedException extends XAuthException {
+class PasswordMismatchException extends XAuthException {
 }

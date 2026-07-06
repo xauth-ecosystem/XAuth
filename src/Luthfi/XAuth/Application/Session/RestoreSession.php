@@ -6,7 +6,7 @@ namespace Luthfi\XAuth\Application\Session;
 
 use Generator;
 use Luthfi\XAuth\Domain\Session\Session;
-use Luthfi\XAuth\repository\SessionRepository;
+use Luthfi\XAuth\Domain\Session\SessionRepository;
 
 class RestoreSession {
 

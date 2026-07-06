@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Luthfi\XAuth\Application\Session;
 
 use Generator;
-use Luthfi\XAuth\repository\SessionRepository;
+use Luthfi\XAuth\Domain\Session\SessionRepository;
 
 class TerminateSession {
 

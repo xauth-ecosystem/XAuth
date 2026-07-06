@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Luthfi\XAuth\service;
+namespace Luthfi\XAuth\Application\Session;
 
 use Generator;
 use Luthfi\XAuth\Application\Session\CreateSession;

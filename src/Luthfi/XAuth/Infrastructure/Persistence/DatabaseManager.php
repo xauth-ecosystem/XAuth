@@ -28,8 +28,8 @@ declare(strict_types=1);
 namespace Luthfi\XAuth\Infrastructure\Persistence;
 
 use Luthfi\XAuth\Main;
-use Luthfi\XAuth\repository\SessionRepository;
-use Luthfi\XAuth\repository\UserRepository;
+use Luthfi\XAuth\Domain\Session\SessionRepository;
+use Luthfi\XAuth\Domain\User\UserRepository;
 use poggit\libasynql\DataConnector;
 
 class DatabaseManager {

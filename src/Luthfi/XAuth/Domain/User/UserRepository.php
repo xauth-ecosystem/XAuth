@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Luthfi\XAuth\repository;
+namespace Luthfi\XAuth\Domain\User;
 
 use Generator;
 use Luthfi\XAuth\Domain\User\User as DomainUser;

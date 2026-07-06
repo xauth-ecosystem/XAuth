@@ -25,7 +25,7 @@
 
 declare(strict_types=1);
 
-namespace Luthfi\XAuth\exception;
+namespace Luthfi\XAuth\Domain\Exception;
 
-class NotRegisteredException extends XAuthException {
+class RegistrationRateLimitException extends XAuthException {
 }

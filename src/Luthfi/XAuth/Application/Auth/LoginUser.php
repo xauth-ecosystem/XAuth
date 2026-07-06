@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Luthfi\XAuth\Application\Auth;
 
 use Generator;
-use Luthfi\XAuth\exception\AccountLockedException;
-use Luthfi\XAuth\exception\IncorrectPasswordException;
-use Luthfi\XAuth\exception\NotRegisteredException;
-use Luthfi\XAuth\repository\UserRepository;
+use Luthfi\XAuth\Domain\Exception\AccountLockedException;
+use Luthfi\XAuth\Domain\Exception\IncorrectPasswordException;
+use Luthfi\XAuth\Domain\Exception\NotRegisteredException;
+use Luthfi\XAuth\Domain\User\UserRepository;
 use Luthfi\XAuth\Domain\User\PasswordHasher;
 use Luthfi\XAuth\Domain\Auth\LoginRateLimiter;
 use pocketmine\player\Player;

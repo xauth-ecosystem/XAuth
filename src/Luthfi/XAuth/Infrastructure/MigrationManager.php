@@ -6,7 +6,7 @@ namespace Luthfi\XAuth\Infrastructure;
 
 use Luthfi\XAuth\Infrastructure\Persistence\ConnectorFactory;
 use Luthfi\XAuth\Infrastructure\Persistence\SchemaManager;
-use Luthfi\XAuth\repository\UserRepository;
+use Luthfi\XAuth\Domain\User\UserRepository;
 use Luthfi\XAuth\Main;
 use pocketmine\utils\TextFormat;
 use SOFe\AwaitGenerator\Await;

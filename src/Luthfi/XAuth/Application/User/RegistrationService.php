@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-namespace Luthfi\XAuth\service;
+namespace Luthfi\XAuth\Application\User;
 
 use Generator;
 use Luthfi\XAuth\Application\User\DeleteUser;
 use Luthfi\XAuth\Application\User\RegisterUser;
 use Luthfi\XAuth\Domain\Event\PlayerRegisterEvent;
-use Luthfi\XAuth\exception\AccountLockedException;
-use Luthfi\XAuth\exception\AlreadyLoggedInException;
-use Luthfi\XAuth\exception\AlreadyRegisteredException;
-use Luthfi\XAuth\exception\ConfirmationExpiredException;
-use Luthfi\XAuth\exception\IncorrectPasswordException;
-use Luthfi\XAuth\exception\NotRegisteredException;
-use Luthfi\XAuth\exception\PasswordMismatchException;
-use Luthfi\XAuth\exception\RegistrationRateLimitException;
-use Luthfi\XAuth\exception\UnregistrationNotInitiatedException;
+use Luthfi\XAuth\Domain\Exception\AccountLockedException;
+use Luthfi\XAuth\Domain\Exception\AlreadyLoggedInException;
+use Luthfi\XAuth\Domain\Exception\AlreadyRegisteredException;
+use Luthfi\XAuth\Domain\Exception\ConfirmationExpiredException;
+use Luthfi\XAuth\Domain\Exception\IncorrectPasswordException;
+use Luthfi\XAuth\Domain\Exception\NotRegisteredException;
+use Luthfi\XAuth\Domain\Exception\PasswordMismatchException;
+use Luthfi\XAuth\Domain\Exception\RegistrationRateLimitException;
+use Luthfi\XAuth\Domain\Exception\UnregistrationNotInitiatedException;
 use Luthfi\XAuth\Main;
 use Luthfi\XAuth\Domain\User\PasswordHasher;
 use pocketmine\player\Player;

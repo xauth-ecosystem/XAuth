@@ -6,10 +6,10 @@ namespace Luthfi\XAuth\Application\Auth;
 
 use Generator;
 use Luthfi\XAuth\Domain\Event\PlayerChangePasswordEvent;
-use Luthfi\XAuth\exception\IncorrectPasswordException;
-use Luthfi\XAuth\exception\NotRegisteredException;
-use Luthfi\XAuth\exception\PasswordMismatchException;
-use Luthfi\XAuth\repository\UserRepository;
+use Luthfi\XAuth\Domain\Exception\IncorrectPasswordException;
+use Luthfi\XAuth\Domain\Exception\NotRegisteredException;
+use Luthfi\XAuth\Domain\Exception\PasswordMismatchException;
+use Luthfi\XAuth\Domain\User\UserRepository;
 use Luthfi\XAuth\Domain\User\PasswordHasher;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
 use pocketmine\player\Player;
