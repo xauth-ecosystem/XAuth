@@ -49,7 +49,6 @@ class AutoLoginStep implements AuthenticationStep, FinalizableStep {
         private ?SessionRepository $sessionRepository,
         private DeviceIdStore $deviceIdStore,
     ) {
-        parent::__construct();
     }
 
     public function getId(): string {
