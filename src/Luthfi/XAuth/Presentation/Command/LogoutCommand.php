@@ -27,7 +27,7 @@ declare(strict_types=1);
 
 namespace Luthfi\XAuth\Presentation\Command;
 
-use Luthfi\XAuth\Application\Auth\AuthenticationService;
+use Luthfi\XAuth\Application\Auth\AuthenticationFacade;
 use Luthfi\XAuth\Application\Auth\LogoutOutcome;
 use Luthfi\XAuth\Presentation\Form\FormManager;
 use pocketmine\command\Command;
@@ -44,7 +44,7 @@ class LogoutCommand extends Command implements PluginOwned {
     use PluginOwnedTrait;
 
     public function __construct(
-        private readonly AuthenticationService $authenticationService,
+        private readonly AuthenticationFacade $authenticationService,
         private readonly FormManager $formManager,
         private readonly Config $customMessages,
         private readonly PluginBase $plugin
