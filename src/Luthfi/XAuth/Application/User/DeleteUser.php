@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Luthfi\XAuth\Application\User;
 
 use Generator;
-use Luthfi\XAuth\Application\Auth\AuthenticationService;
+use Luthfi\XAuth\Application\Auth\AuthenticationFacade;
 use Luthfi\XAuth\Domain\Event\PlayerUnregisterEvent;
 use Luthfi\XAuth\Domain\Exception\ConfirmationExpiredException;
 use Luthfi\XAuth\Domain\Exception\IncorrectPasswordException;
@@ -27,7 +27,7 @@ class DeleteUser {
         private PasswordHasher $passwordHasher,
         private PluginBase $plugin,
         private Config $customMessages,
-        private AuthenticationService $authenticationService,
+        private AuthenticationFacade $authenticationService,
     ) {}
 
     public function initiate(Player $player): void {
