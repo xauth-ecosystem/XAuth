@@ -29,6 +29,7 @@ namespace Luthfi\XAuth\Presentation\Form;
 
 use jojoe77777\FormAPI\CustomForm;
 use Luthfi\XAuth\Application\Auth\AuthenticationService;
+use Luthfi\XAuth\Application\Auth\LogoutOutcome;
 use Luthfi\XAuth\Application\Auth\Pipeline\AuthenticationFlowManager;
 use Luthfi\XAuth\Application\User\RegistrationService;
 use Luthfi\XAuth\Domain\Event\PlayerChangePasswordEvent;
@@ -41,6 +42,7 @@ use Luthfi\XAuth\Domain\Exception\NotRegisteredException;
 use Luthfi\XAuth\Domain\Exception\PasswordMismatchException;
 use Luthfi\XAuth\Domain\Exception\PlayerBlockedException;
 use Luthfi\XAuth\Domain\Exception\RegistrationRateLimitException;
+use Luthfi\XAuth\Presentation\Title\TitleService;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
 use pocketmine\player\Player;
 use pocketmine\plugin\PluginBase;
@@ -50,22 +52,38 @@ use Throwable;
 
 class FormManager {
 
-    private ?AuthenticationFlowManager $authenticationFlowManager = null;
-
     public function __construct(
         private PluginBase $plugin,
         private Config $customMessages,
         private Config $configData,
         private RegistrationService $registrationService,
-        private ?AuthenticationService $authenticationService = null,
+        private AuthenticationService $authenticationService,
+        private AuthenticationFlowManager $authenticationFlowManager,
+        private TitleService $titleService,
     ) {}
 
-    public function setAuthenticationService(AuthenticationService $authenticationService): void {
-        $this->authenticationService = $authenticationService;
-    }
+    /**
+     * Shows the player the right prompt (login or register, form or title) after they have been logged out.
+     */
+    public function promptAfterLogout(Player $player, LogoutOutcome $outcome): void {
+        $messages = (array)$this->customMessages->get("messages");
+        $formsEnabled = (bool)($this->configData->getNested("forms.enabled") ?? true);
 
-    public function setAuthenticationFlowManager(AuthenticationFlowManager $authenticationFlowManager): void {
-        $this->authenticationFlowManager = $authenticationFlowManager;
+        if ($outcome === LogoutOutcome::EXISTING_USER) {
+            $player->sendMessage((string)($messages["login_prompt"] ?? ""));
+            if ($formsEnabled) {
+                $this->sendLoginForm($player);
+            } else {
+                $this->titleService->sendTitle($player, "login_prompt", null, true);
+            }
+        } else {
+            $player->sendMessage((string)($messages["register_prompt"] ?? ""));
+            if ($formsEnabled) {
+                $this->sendRegisterForm($player);
+            } else {
+                $this->titleService->sendTitle($player, "register_prompt", null, true);
+            }
+        }
     }
 
     public function sendLoginForm(Player $player, ?string $errorMessage = null): void {
@@ -158,26 +176,33 @@ class FormManager {
             $password = (string)($data["password"] ?? '');
             $confirmPassword = (string)($data["confirm_password"] ?? '');
 
-            try {
-                $registrationService = $this->registrationService;
-                $registrationService->handleRegistrationRequest($player, $password, $confirmPassword);
-            } catch (AlreadyLoggedInException $e) {
-                $player->sendMessage((string)($messages["already_logged_in"] ?? "§cYou are already logged in."));
-            } catch (AlreadyRegisteredException $e) {
-                $this->sendRegisterForm($player, (string)($messages["already_registered"] ?? "§cYou are already registered. Please use /login <password> to log in."));
-            } catch (AccountLockedException $e) {
-                $this->sendRegisterForm($player, (string)($messages["account_locked_by_admin"] ?? "§cYour account has been locked by an administrator."));
-            } catch (RegistrationRateLimitException $e) {
-                $this->sendRegisterForm($player, (string)($messages["registration_ip_limit_reached"] ?? "§cYou have reached the maximum number of registrations for your IP address."));
-            } catch (PasswordMismatchException $e) {
-                $this->sendRegisterForm($player, (string)($messages["password_mismatch"] ?? "§cPasswords do not match."));
-            } catch (InvalidCommandSyntaxException $e) {
-                // This exception is used to pass validation messages from PasswordValidator
-                $this->sendRegisterForm($player, $e->getMessage());
-            } catch (\Exception $e) {
-                $this->sendRegisterForm($player, (string)($messages["unexpected_error"] ?? "§cAn unexpected error occurred. Please try again."));
-                $this->plugin->getLogger()->error("An unexpected error occurred during form registration: " . $e->getMessage());
-            }
+            Await::g2c(
+                $this->registrationService->handleRegistrationRequest($player, $password, $confirmPassword),
+                function () use ($player): void {
+                    $context = $this->authenticationFlowManager->ensureContextExists($player);
+                    $context->setLoginType(PlayerPreAuthenticateEvent::LOGIN_TYPE_REGISTRATION);
+                    $this->authenticationFlowManager->completeStep($player, 'xauth_register');
+                },
+                function (Throwable $e) use ($player, $messages): void {
+                    if ($e instanceof AlreadyLoggedInException) {
+                        $player->sendMessage((string)($messages["already_logged_in"] ?? "§cYou are already logged in."));
+                    } elseif ($e instanceof AlreadyRegisteredException) {
+                        $this->sendRegisterForm($player, (string)($messages["already_registered"] ?? "§cYou are already registered. Please use /login <password> to log in."));
+                    } elseif ($e instanceof AccountLockedException) {
+                        $this->sendRegisterForm($player, (string)($messages["account_locked_by_admin"] ?? "§cYour account has been locked by an administrator."));
+                    } elseif ($e instanceof RegistrationRateLimitException) {
+                        $this->sendRegisterForm($player, (string)($messages["registration_ip_limit_reached"] ?? "§cYou have reached the maximum number of registrations for your IP address."));
+                    } elseif ($e instanceof PasswordMismatchException) {
+                        $this->sendRegisterForm($player, (string)($messages["password_mismatch"] ?? "§cPasswords do not match."));
+                    } elseif ($e instanceof InvalidCommandSyntaxException) {
+                        // This exception is used to pass validation messages from PasswordValidator
+                        $this->sendRegisterForm($player, $e->getMessage());
+                    } else {
+                        $this->sendRegisterForm($player, (string)($messages["unexpected_error"] ?? "§cAn unexpected error occurred. Please try again."));
+                        $this->plugin->getLogger()->error("An unexpected error occurred during form registration: " . $e->getMessage());
+                    }
+                }
+            );
         });
 
         $form->setTitle((string)($registerFormConfig["title"] ?? "Register"));
