@@ -28,6 +28,8 @@ declare(strict_types=1);
 namespace Luthfi\XAuth\Presentation\Command;
 
 use Luthfi\XAuth\Application\Auth\AuthenticationService;
+use Luthfi\XAuth\Application\Auth\LogoutOutcome;
+use Luthfi\XAuth\Presentation\Form\FormManager;
 use pocketmine\command\Command;
 use pocketmine\command\CommandSender;
 use pocketmine\player\Player;
@@ -43,6 +45,7 @@ class LogoutCommand extends Command implements PluginOwned {
 
     public function __construct(
         private readonly AuthenticationService $authenticationService,
+        private readonly FormManager $formManager,
         private readonly Config $customMessages,
         private readonly PluginBase $plugin
     ) {
@@ -76,8 +79,9 @@ class LogoutCommand extends Command implements PluginOwned {
 
         Await::g2c(
             $this->authenticationService->handleLogout($sender),
-            function() use ($sender, $messages): void {
+            function(LogoutOutcome $outcome) use ($sender, $messages): void {
                 $sender->sendMessage((string)($messages["logout_success"] ?? "§aYou have been logged out."));
+                $this->formManager->promptAfterLogout($sender, $outcome);
             },
             function(Throwable $e) use ($sender, $messages): void {
                 $sender->sendMessage((string)($messages["unexpected_error"] ?? "§cAn unexpected error occurred. Please try again."));
