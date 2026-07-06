@@ -27,7 +27,7 @@ declare(strict_types=1);
 
 namespace Luthfi\XAuth\Presentation\Expansion;
 
-use Luthfi\XAuth\Application\Auth\AuthenticationService;
+use Luthfi\XAuth\Application\Auth\AuthenticationFacade;
 use MohamadRZ4\Placeholder\expansion\PlaceholderExpansion;
 use pocketmine\player\Player;
 use pocketmine\plugin\PluginBase;
@@ -38,7 +38,7 @@ class XAuthExpansion extends PlaceholderExpansion {
     protected $plugin;
 
     public function __construct(
-        private AuthenticationService $authenticationService,
+        private AuthenticationFacade $authenticationService,
         private Config $customMessages,
         PluginBase $plugin,
     ) {
