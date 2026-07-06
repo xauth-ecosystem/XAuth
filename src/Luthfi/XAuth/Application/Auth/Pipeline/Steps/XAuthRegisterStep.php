@@ -62,7 +62,7 @@ class XAuthRegisterStep implements AuthenticationStep, FinalizableStep {
                 if ($formsEnabled) {
                     $this->plugin->getFormManager()->sendRegisterForm($player);
                 } else {
-                    $this->plugin->getTitleManager()->sendTitle($player, "register_prompt", null, true);
+                    $this->plugin->getTitleService()->sendTitle($player, "register_prompt", null, true);
                 }
             } else {
                 $this->skip($player);
@@ -82,7 +82,7 @@ class XAuthRegisterStep implements AuthenticationStep, FinalizableStep {
         if ($context->wasStepCompleted($this->getId())) {
             $messages = (array)$this->plugin->getCustomMessages()->get("messages");
             $player->sendMessage((string)($messages["register_success"] ?? "§aYou have successfully registered!"));
-            $this->plugin->getTitleManager()->sendTitle($player, "register_success", 2 * 20);
+            $this->plugin->getTitleService()->sendTitle($player, "register_success", 2 * 20);
         }
     }
 }

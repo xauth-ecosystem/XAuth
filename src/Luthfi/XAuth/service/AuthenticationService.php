@@ -16,7 +16,7 @@ use Luthfi\XAuth\exception\NotRegisteredException;
 use Luthfi\XAuth\Application\Auth\Pipeline\AuthenticationContext;
 use Luthfi\XAuth\Presentation\Form\FormManager;
 use Luthfi\XAuth\Main;
-use Luthfi\XAuth\PasswordHasher;
+use Luthfi\XAuth\Domain\User\PasswordHasher;
 use Luthfi\XAuth\repository\SessionRepository;
 use Luthfi\XAuth\repository\UserRepository;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
@@ -31,10 +31,10 @@ class AuthenticationService {
     private PasswordHasher $passwordHasher;
     private SessionService $sessionService;
     private PlayerStateService $playerStateService;
-    private PlayerVisibilityService $playerVisibilityService;
-    private TitleManager $titleManager;
+    private VisibilityManager $playerVisibilityService;
+    private TitleService $titleManager;
     private FormManager $formManager;
-    private LoginThrottler $loginThrottler;
+    private LoginRateLimiter $loginThrottler;
     private LoginUser $loginUser;
     private LogoutUser $logoutUser;
     private ChangePassword $changePassword;
@@ -53,10 +53,10 @@ class AuthenticationService {
         PasswordHasher $passwordHasher,
         SessionService $sessionService,
         PlayerStateService $playerStateService,
-        PlayerVisibilityService $playerVisibilityService,
-        TitleManager $titleManager,
+        VisibilityManager $playerVisibilityService,
+        TitleService $titleManager,
         FormManager $formManager,
-        LoginThrottler $loginThrottler,
+        LoginRateLimiter $loginThrottler,
         LoginUser $loginUser,
         LogoutUser $logoutUser,
         ChangePassword $changePassword,
@@ -191,7 +191,7 @@ class AuthenticationService {
             throw new NotRegisteredException();
         }
 
-        if (($message = $this->plugin->getPasswordValidator()->validatePassword($newPassword)) !== null) {
+        if (($message = $this->plugin->getPasswordPolicy()->validatePassword($newPassword)) !== null) {
             throw new InvalidCommandSyntaxException($message);
         }
 

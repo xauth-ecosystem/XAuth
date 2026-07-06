@@ -91,7 +91,7 @@ class AutoLoginStep implements AuthenticationStep, FinalizableStep {
         if ($context->wasStepCompleted($this->getId())) {
             $messages = (array)$this->plugin->getCustomMessages()->get("messages");
             $player->sendMessage((string)($messages["auto_login_success"] ?? "§aYou have been automatically logged in."));
-            $this->plugin->getTitleManager()->sendTitle($player, "auto_login_success", 2 * 20);
+            $this->plugin->getTitleService()->sendTitle($player, "auto_login_success", 2 * 20);
         }
     }
 }

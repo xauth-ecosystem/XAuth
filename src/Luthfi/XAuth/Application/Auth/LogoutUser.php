@@ -6,8 +6,8 @@ namespace Luthfi\XAuth\Application\Auth;
 
 use Generator;
 use Luthfi\XAuth\service\PlayerStateService;
-use Luthfi\XAuth\service\PlayerVisibilityService;
-use Luthfi\XAuth\TitleManager;
+use Luthfi\XAuth\Domain\Player\VisibilityManager;
+use Luthfi\XAuth\Presentation\Title\TitleService;
 use Luthfi\XAuth\Presentation\Form\FormManager;
 use pocketmine\player\Player;
 
@@ -15,8 +15,8 @@ class LogoutUser {
 
     public function __construct(
         private PlayerStateService $playerStateService,
-        private PlayerVisibilityService $playerVisibilityService,
-        private TitleManager $titleManager,
+        private VisibilityManager $playerVisibilityService,
+        private TitleService $titleManager,
         private FormManager $formManager,
         private \Luthfi\XAuth\Main $plugin,
     ) {}

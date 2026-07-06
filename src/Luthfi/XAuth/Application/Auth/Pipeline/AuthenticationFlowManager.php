@@ -105,7 +105,7 @@ class AuthenticationFlowManager {
                     if ($formsEnabled) {
                         $this->plugin->getFormManager()->sendLoginForm($player);
                     } else {
-                        $this->plugin->getTitleManager()->sendTitle($player, "login_prompt", null, true);
+                        $this->plugin->getTitleService()->sendTitle($player, "login_prompt", null, true);
                     }
                 } else {
                     $message = (string)(((array)$this->plugin->getCustomMessages()->get("messages"))["register_prompt"] ?? "");
@@ -113,7 +113,7 @@ class AuthenticationFlowManager {
                     if ($formsEnabled) {
                         $this->plugin->getFormManager()->sendRegisterForm($player);
                     } else {
-                        $this->plugin->getTitleManager()->sendTitle($player, "register_prompt", null, true);
+                        $this->plugin->getTitleService()->sendTitle($player, "register_prompt", null, true);
                     }
                 }
             });

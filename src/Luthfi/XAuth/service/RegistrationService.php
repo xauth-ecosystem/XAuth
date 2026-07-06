@@ -18,7 +18,7 @@ use Luthfi\XAuth\exception\PasswordMismatchException;
 use Luthfi\XAuth\exception\RegistrationRateLimitException;
 use Luthfi\XAuth\exception\UnregistrationNotInitiatedException;
 use Luthfi\XAuth\Main;
-use Luthfi\XAuth\PasswordHasher;
+use Luthfi\XAuth\Domain\User\PasswordHasher;
 use pocketmine\player\Player;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
 

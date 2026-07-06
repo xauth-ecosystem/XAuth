@@ -56,17 +56,19 @@ use Luthfi\XAuth\service\AuthenticationService;
 use Luthfi\XAuth\Infrastructure\Persistence\DatabaseManager;
 use Luthfi\XAuth\repository\SessionRepository;
 use Luthfi\XAuth\repository\UserRepository;
-use Luthfi\XAuth\service\LoginThrottler;
+use Luthfi\XAuth\Domain\Auth\LoginRateLimiter;
 use Luthfi\XAuth\service\PlayerStateService;
-use Luthfi\XAuth\service\PlayerVisibilityService;
+use Luthfi\XAuth\Domain\Player\VisibilityManager;
 use Luthfi\XAuth\service\PluginControlService;
 use Luthfi\XAuth\service\RegistrationService;
 use Luthfi\XAuth\service\SessionService;
-use Luthfi\XAuth\service\TitleManager;
+use Luthfi\XAuth\Presentation\Title\TitleService;
 use Luthfi\XAuth\Application\Auth\Pipeline\Steps\AuthenticationStep;
 use Luthfi\XAuth\Application\Auth\Pipeline\Steps\AutoLoginStep;
 use Luthfi\XAuth\Application\Auth\Pipeline\Steps\XAuthLoginStep;
 use Luthfi\XAuth\Application\Auth\Pipeline\Steps\XAuthRegisterStep;
+use Luthfi\XAuth\Domain\User\PasswordHasher;
+use Luthfi\XAuth\Domain\User\PasswordPolicy;
 use Luthfi\XAuth\Presentation\Form\FormManager;
 use Luthfi\XAuth\Infrastructure\Scheduler\CleanupSessionsTask;
 use Luthfi\XAuth\Infrastructure\Scheduler\KickTask;
@@ -85,18 +87,18 @@ class Main extends PluginBase {
     private ?Config $configData = null;
     private ?Config $languageMessages = null;
     private ?FormManager $formManager = null;
-    private ?PasswordValidator $passwordValidator = null;
+    private ?PasswordPolicy $passwordPolicy = null;
     private ?PasswordHasher $passwordHasher = null;
     private ?AuthenticationService $authenticationService = null;
     private ?RegistrationService $registrationService = null;
     private ?SessionService $sessionService = null;
     private ?PlayerStateService $playerStateService = null;
-    private ?PlayerVisibilityService $playerVisibilityService = null;
+    private ?VisibilityManager $playerVisibilityService = null;
     private ?PluginControlService $pluginControlService = null;
     private ?MigrationManager $migrationManager = null;
     private ?AuthenticationFlowManager $authenticationFlowManager = null;
-    private ?TitleManager $titleManager = null;
-    private ?LoginThrottler $loginThrottler = null;
+    private ?TitleService $titleManager = null;
+    private ?LoginRateLimiter $loginThrottler = null;
 
 
 
@@ -119,13 +121,13 @@ class Main extends PluginBase {
         $this->checkConfigVersion();
 
         $this->migrationManager = new MigrationManager($this);
-        $this->passwordValidator = new PasswordValidator($this);
+        $this->passwordPolicy = new PasswordPolicy($this);
         $this->formManager = new FormManager($this);
         $this->passwordHasher = new PasswordHasher($this);
-        $this->playerVisibilityService = new PlayerVisibilityService($this);
+        $this->playerVisibilityService = new VisibilityManager($this);
         $this->playerStateService = new PlayerStateService($this, $this->playerVisibilityService);
         $this->pluginControlService = new PluginControlService($this);
-        $this->titleManager = new TitleManager($this);
+        $this->titleManager = new TitleService($this);
 
         try {
             $this->databaseManager = new DatabaseManager($this, (array)$this->configData->get('database'));
@@ -136,7 +138,7 @@ class Main extends PluginBase {
             $userRepository = $this->databaseManager->getUserRepository();
             $sessionRepository = $this->databaseManager->getSessionRepository();
 
-            $this->loginThrottler = new LoginThrottler($this, $userRepository);
+            $this->loginThrottler = new LoginRateLimiter($this, $userRepository);
 
             $createSession = new CreateSession($sessionRepository);
             $restoreSession = new RestoreSession($sessionRepository);
@@ -251,7 +253,7 @@ class Main extends PluginBase {
         return $this->languageMessages;
     }
 
-    public function getPasswordValidator(): ?PasswordValidator {
+    public function getPasswordPolicy(): ?PasswordPolicy {
         return $this->passwordValidator;
     }
 
@@ -279,7 +281,7 @@ class Main extends PluginBase {
         return $this->playerStateService;
     }
 
-    public function getPlayerVisibilityService(): ?PlayerVisibilityService {
+    public function getVisibilityManager(): ?VisibilityManager {
         return $this->playerVisibilityService;
     }
 
@@ -295,11 +297,11 @@ class Main extends PluginBase {
         return $this->authenticationFlowManager;
     }
 
-    public function getTitleManager(): ?TitleManager {
+    public function getTitleService(): ?TitleService {
         return $this->titleManager;
     }
 
-    public function getLoginThrottler(): ?LoginThrottler {
+    public function getLoginRateLimiter(): ?LoginRateLimiter {
         return $this->loginThrottler;
     }
 

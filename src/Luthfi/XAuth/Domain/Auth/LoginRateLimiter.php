@@ -25,7 +25,7 @@
 
 declare(strict_types=1);
 
-namespace Luthfi\XAuth\service;
+namespace Luthfi\XAuth\Domain\Auth;
 
 use Generator;
 use Luthfi\XAuth\repository\UserRepository;
@@ -34,7 +34,7 @@ use Luthfi\XAuth\exception\PlayerBlockedException;
 use Luthfi\XAuth\Main;
 use pocketmine\player\Player;
 
-class LoginThrottler {
+class LoginRateLimiter {
 
     private Main $plugin;
     private UserRepository $userRepository;

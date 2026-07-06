@@ -9,8 +9,8 @@ use Luthfi\XAuth\exception\AccountLockedException;
 use Luthfi\XAuth\exception\IncorrectPasswordException;
 use Luthfi\XAuth\exception\NotRegisteredException;
 use Luthfi\XAuth\repository\UserRepository;
-use Luthfi\XAuth\PasswordHasher;
-use Luthfi\XAuth\service\LoginThrottler;
+use Luthfi\XAuth\Domain\User\PasswordHasher;
+use Luthfi\XAuth\Domain\Auth\LoginRateLimiter;
 use pocketmine\player\Player;
 
 class LoginUser {
@@ -18,7 +18,7 @@ class LoginUser {
     public function __construct(
         private UserRepository $userRepository,
         private PasswordHasher $passwordHasher,
-        private LoginThrottler $loginThrottler,
+        private LoginRateLimiter $loginThrottler,
     ) {}
 
     public function handle(Player $player, string $password): Generator {

@@ -59,7 +59,7 @@ class PluginControlService {
 
         if ($oldData !== $newData) {
             foreach ($main->getServer()->getOnlinePlayers() as $player) {
-                $main->getPlayerVisibilityService()->updatePlayerVisibility($player);
+                $main->getVisibilityManager()->updatePlayerVisibility($player);
             }
         }
     }

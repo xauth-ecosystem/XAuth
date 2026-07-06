@@ -62,7 +62,7 @@ class XAuthLoginStep implements AuthenticationStep, FinalizableStep {
                 if ($formsEnabled) {
                     $this->plugin->getFormManager()->sendLoginForm($player);
                 } else {
-                    $this->plugin->getTitleManager()->sendTitle($player, "login_prompt", null, true);
+                    $this->plugin->getTitleService()->sendTitle($player, "login_prompt", null, true);
                 }
             } else {
                 $this->skip($player); 
@@ -82,7 +82,7 @@ class XAuthLoginStep implements AuthenticationStep, FinalizableStep {
         if ($context->wasStepCompleted($this->getId())) {
             $messages = (array)$this->plugin->getCustomMessages()->get("messages");
             $player->sendMessage((string)($messages["login_success"] ?? ""));
-            $this->plugin->getTitleManager()->sendTitle($player, "login_success", 2 * 20);
+            $this->plugin->getTitleService()->sendTitle($player, "login_success", 2 * 20);
         }
     }
 }

@@ -11,7 +11,7 @@ use Luthfi\XAuth\exception\AlreadyRegisteredException;
 use Luthfi\XAuth\exception\PasswordMismatchException;
 use Luthfi\XAuth\exception\RegistrationRateLimitException;
 use Luthfi\XAuth\repository\UserRepository;
-use Luthfi\XAuth\PasswordHasher;
+use Luthfi\XAuth\Domain\User\PasswordHasher;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
 use pocketmine\player\Player;
 
@@ -38,7 +38,7 @@ class RegisterUser {
             throw new RegistrationRateLimitException();
         }
 
-        if (($message = $this->plugin->getPasswordValidator()->validatePassword($password)) !== null) {
+        if (($message = $this->plugin->getPasswordPolicy()->validatePassword($password)) !== null) {
             throw new InvalidCommandSyntaxException($message);
         }
 

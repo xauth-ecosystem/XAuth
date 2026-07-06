@@ -10,7 +10,7 @@ use Luthfi\XAuth\exception\ConfirmationExpiredException;
 use Luthfi\XAuth\exception\IncorrectPasswordException;
 use Luthfi\XAuth\exception\NotRegisteredException;
 use Luthfi\XAuth\exception\UnregistrationNotInitiatedException;
-use Luthfi\XAuth\PasswordHasher;
+use Luthfi\XAuth\Domain\User\PasswordHasher;
 use Luthfi\XAuth\repository\UserRepository;
 use pocketmine\player\Player;
 

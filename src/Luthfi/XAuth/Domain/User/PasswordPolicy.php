@@ -25,9 +25,9 @@
 
 declare(strict_types=1);
 
-namespace Luthfi\XAuth;
+namespace Luthfi\XAuth\Domain\User;
 
-class PasswordValidator {
+class PasswordPolicy {
 
     private Main $plugin;
     private array $weakPasswords = [];

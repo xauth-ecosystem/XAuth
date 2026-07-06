@@ -40,12 +40,12 @@ use pocketmine\world\Position;
 class PlayerStateService {
 
     private Main $plugin;
-    private PlayerVisibilityService $visibilityService;
+    private VisibilityManager $visibilityService;
 
     /** @var array<string, PlayerState> */
     private array $protectedStates = [];
 
-    public function __construct(Main $plugin, PlayerVisibilityService $visibilityService) {
+    public function __construct(Main $plugin, VisibilityManager $visibilityService) {
         $this->plugin = $plugin;
         $this->visibilityService = $visibilityService;
     }

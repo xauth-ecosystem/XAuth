@@ -7,7 +7,7 @@ namespace Luthfi\XAuth\Application\Auth;
 use Generator;
 use Luthfi\XAuth\exception\NotRegisteredException;
 use Luthfi\XAuth\repository\UserRepository;
-use Luthfi\XAuth\PasswordHasher;
+use Luthfi\XAuth\Domain\User\PasswordHasher;
 
 class VerifyPassword {
 

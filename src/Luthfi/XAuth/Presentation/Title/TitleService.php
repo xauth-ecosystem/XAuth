@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Luthfi\XAuth\service;
+namespace Luthfi\XAuth\Presentation\Title;
 
 use Luthfi\XAuth\Main;
 use Luthfi\XAuth\Infrastructure\Scheduler\SendTitleTask;
 use pocketmine\player\Player;
 use pocketmine\scheduler\TaskHandler;
 
-class TitleManager 
+class TitleService 
 {
     private Main $plugin;
     

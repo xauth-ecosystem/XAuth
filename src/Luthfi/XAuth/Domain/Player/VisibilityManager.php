@@ -25,7 +25,7 @@
 
 declare(strict_types=1);
 
-namespace Luthfi\XAuth\service;
+namespace Luthfi\XAuth\Domain\Player;
 
 use Luthfi\XAuth\Main;
 use pocketmine\entity\effect\EffectInstance;
@@ -35,7 +35,7 @@ use pocketmine\network\mcpe\protocol\PlayerListPacket;
 use pocketmine\network\mcpe\protocol\types\PlayerListEntry;
 use pocketmine\player\Player;
 
-class PlayerVisibilityService {
+class VisibilityManager {
 
     private Main $plugin;
 

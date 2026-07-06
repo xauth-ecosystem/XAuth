@@ -25,7 +25,7 @@
 
 declare(strict_types=1);
 
-namespace Luthfi\XAuth;
+namespace Luthfi\XAuth\Domain\User;
 
 use InvalidArgumentException;
 use pocketmine\utils\Config;

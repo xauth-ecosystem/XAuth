@@ -10,7 +10,7 @@ use Luthfi\XAuth\exception\IncorrectPasswordException;
 use Luthfi\XAuth\exception\NotRegisteredException;
 use Luthfi\XAuth\exception\PasswordMismatchException;
 use Luthfi\XAuth\repository\UserRepository;
-use Luthfi\XAuth\PasswordHasher;
+use Luthfi\XAuth\Domain\User\PasswordHasher;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
 use pocketmine\player\Player;
 use pocketmine\Server;
@@ -40,7 +40,7 @@ class ChangePassword {
             yield from $this->userRepository->updatePassword($player, $currentHashedPassword);
         }
 
-        if (($message = $this->plugin->getPasswordValidator()->validatePassword($newPassword)) !== null) {
+        if (($message = $this->plugin->getPasswordPolicy()->validatePassword($newPassword)) !== null) {
             throw new InvalidCommandSyntaxException($message);
         }
 
@@ -71,7 +71,7 @@ class ChangePassword {
             yield from $this->userRepository->updatePassword($offlinePlayer, $currentHashedPassword);
         }
 
-        if (($message = $this->plugin->getPasswordValidator()->validatePassword($newPassword)) !== null) {
+        if (($message = $this->plugin->getPasswordPolicy()->validatePassword($newPassword)) !== null) {
             throw new InvalidCommandSyntaxException($message);
         }
 
@@ -84,7 +84,7 @@ class ChangePassword {
     }
 
     public function handleForceForPlayer(Player $player, string $newPassword, string $confirmNewPassword): Generator {
-        if (($message = $this->plugin->getPasswordValidator()->validatePassword($newPassword)) !== null) {
+        if (($message = $this->plugin->getPasswordPolicy()->validatePassword($newPassword)) !== null) {
             throw new InvalidCommandSyntaxException($message);
         }
 
