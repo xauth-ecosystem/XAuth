@@ -27,7 +27,7 @@ declare(strict_types=1);
 
 namespace Luthfi\XAuth\Presentation\Command;
 
-use Luthfi\XAuth\Application\Auth\AuthenticationService;
+use Luthfi\XAuth\Application\Auth\AuthenticationFacade;
 use Luthfi\XAuth\Application\Auth\Pipeline\AuthenticationFlowManager;
 use Luthfi\XAuth\Domain\Event\PlayerPreAuthenticateEvent;
 use Luthfi\XAuth\Domain\Exception\AccountLockedException;
@@ -49,7 +49,7 @@ class LoginCommand extends Command implements PluginOwned {
     use PluginOwnedTrait;
 
     public function __construct(
-        private readonly AuthenticationService $authenticationService,
+        private readonly AuthenticationFacade $authenticationService,
         private readonly AuthenticationFlowManager $authenticationFlowManager,
         private readonly Config $customMessages,
         private readonly PluginBase $plugin
