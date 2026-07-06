@@ -32,6 +32,11 @@ use Luthfi\XAuth\Application\Auth\ChangePassword;
 use Luthfi\XAuth\Application\Auth\LoginUser;
 use Luthfi\XAuth\Application\Auth\LogoutUser;
 use Luthfi\XAuth\Application\Auth\VerifyPassword;
+use Luthfi\XAuth\Application\Session\CreateSession;
+use Luthfi\XAuth\Application\Session\RestoreSession;
+use Luthfi\XAuth\Application\Session\TerminateSession;
+use Luthfi\XAuth\Application\User\RegisterUser;
+use Luthfi\XAuth\Application\User\DeleteUser;
 use Luthfi\XAuth\commands\LoginCommand;
 use Luthfi\XAuth\commands\LogoutCommand;
 use Luthfi\XAuth\commands\RegisterCommand;
@@ -131,8 +136,15 @@ class Main extends PluginBase {
             $sessionRepository = $this->databaseManager->getSessionRepository();
 
             $this->loginThrottler = new LoginThrottler($this, $userRepository);
-            $this->sessionService = new SessionService($this, $sessionRepository);
-            $this->registrationService = new RegistrationService($this, $userRepository);
+
+            $createSession = new CreateSession($sessionRepository);
+            $restoreSession = new RestoreSession($sessionRepository);
+            $terminateSession = new TerminateSession($sessionRepository);
+            $this->sessionService = new SessionService($this, $restoreSession, $createSession, $terminateSession);
+
+            $registerUser = new RegisterUser($userRepository, $this->passwordHasher, $this);
+            $deleteUser = new DeleteUser($userRepository, $this->passwordHasher, $this);
+            $this->registrationService = new RegistrationService($this, $registerUser, $deleteUser);
 
             $loginUser = new LoginUser($userRepository, $this->passwordHasher, $this->loginThrottler);
             $logoutUser = new LogoutUser(
