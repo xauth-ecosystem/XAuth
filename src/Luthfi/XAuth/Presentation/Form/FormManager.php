@@ -25,7 +25,7 @@
 
 declare(strict_types=1);
 
-namespace Luthfi\XAuth;
+namespace Luthfi\XAuth\Presentation\Form;
 
 use jojoe77777\FormAPI\CustomForm;
 use Luthfi\XAuth\event\PlayerChangePasswordEvent;

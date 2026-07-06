@@ -8,7 +8,7 @@ use Generator;
 use Luthfi\XAuth\service\PlayerStateService;
 use Luthfi\XAuth\service\PlayerVisibilityService;
 use Luthfi\XAuth\TitleManager;
-use Luthfi\XAuth\FormManager;
+use Luthfi\XAuth\Presentation\Form\FormManager;
 use pocketmine\player\Player;
 
 class LogoutUser {

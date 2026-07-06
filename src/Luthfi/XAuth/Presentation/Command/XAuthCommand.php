@@ -25,7 +25,7 @@
 
 declare(strict_types=1);
 
-namespace Luthfi\XAuth\commands;
+namespace Luthfi\XAuth\Presentation\Command;
 
 use Luthfi\XAuth\exception\NotRegisteredException;
 use Luthfi\XAuth\Main;
