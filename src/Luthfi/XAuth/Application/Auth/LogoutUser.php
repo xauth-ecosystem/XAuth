@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Luthfi\XAuth\Application\Auth;
 
 use Generator;
-use Luthfi\XAuth\Application\Player\PlayerStateService;
-use Luthfi\XAuth\Domain\Player\VisibilityManager;
+use Luthfi\XAuth\Application\Player\PlayerStateFacade;
+use Luthfi\XAuth\Infrastructure\VisibilityManager;
 use Luthfi\XAuth\Domain\User\UserRepository;
 use Luthfi\XAuth\Infrastructure\KickTaskManager;
 use pocketmine\player\Player;
@@ -15,7 +15,7 @@ use pocketmine\plugin\PluginBase;
 class LogoutUser {
 
     public function __construct(
-        private PlayerStateService $playerStateService,
+        private PlayerStateFacade $playerStateService,
         private VisibilityManager $playerVisibilityService,
         private PluginBase $plugin,
         private KickTaskManager $kickTaskManager,
