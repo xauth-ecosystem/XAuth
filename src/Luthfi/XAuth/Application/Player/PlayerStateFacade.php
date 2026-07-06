@@ -29,7 +29,8 @@ namespace Luthfi\XAuth\Application\Player;
 
 use Luthfi\XAuth\Domain\Event\PlayerStateRestoreEvent;
 use Luthfi\XAuth\Domain\Event\PlayerStateSaveEvent;
-use Luthfi\XAuth\PlayerState;
+use Luthfi\XAuth\Domain\Player\PlayerState;
+use Luthfi\XAuth\Infrastructure\VisibilityManager;
 use pocketmine\entity\effect\EffectInstance;
 use pocketmine\entity\effect\VanillaEffects;
 use pocketmine\player\GameMode;
@@ -37,7 +38,7 @@ use pocketmine\player\Player;
 use pocketmine\plugin\PluginBase;
 use pocketmine\world\Position;
 
-class PlayerStateService {
+class PlayerStateFacade {
 
     private PluginBase $plugin;
     private VisibilityManager $visibilityService;
