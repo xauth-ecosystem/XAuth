@@ -27,7 +27,7 @@ declare(strict_types=1);
 
 namespace Luthfi\XAuth\Presentation\Listener;
 
-use Luthfi\XAuth\Application\Auth\AuthenticationService;
+use Luthfi\XAuth\Application\Auth\AuthenticationFacade;
 use Luthfi\XAuth\Application\Auth\Pipeline\AuthenticationFlowManager;
 use Luthfi\XAuth\Domain\User\UserRepository;
 use Luthfi\XAuth\Infrastructure\DeviceIdStore;
@@ -44,13 +44,9 @@ use SOFe\AwaitGenerator\Await;
 class PlayerSessionListener implements Listener {
 
     private PluginBase $plugin;
-    private AuthenticationService $authenticationService;
-    private AuthenticationFlowManager $authenticationFlowManager;
-    private Config $customMessages;
-    private DeviceIdStore $deviceIdStore;
-    private UserRepository $userRepository;
+    private AuthenticationFacade $authenticationService;
 
-    public function __construct(PluginBase $plugin, AuthenticationService $authenticationService, AuthenticationFlowManager $authenticationFlowManager, Config $customMessages, DeviceIdStore $deviceIdStore, UserRepository $userRepository) {
+    public function __construct(PluginBase $plugin, AuthenticationFacade $authenticationService, AuthenticationFlowManager $authenticationFlowManager, Config $customMessages, DeviceIdStore $deviceIdStore, UserRepository $userRepository) {
         $this->plugin = $plugin;
         $this->authenticationService = $authenticationService;
         $this->authenticationFlowManager = $authenticationFlowManager;
