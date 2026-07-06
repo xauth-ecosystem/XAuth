@@ -42,7 +42,6 @@ class VisibilityManager {
     public function __construct(
         private PluginBase $plugin,
         private Config $configData,
-        private Config $customMessages,
     ) {}
 
     public function updatePlayerVisibility(Player $targetPlayer, Closure $isAuthenticated): void {

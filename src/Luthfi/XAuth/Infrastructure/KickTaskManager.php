@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Luthfi\XAuth\Infrastructure;
 
 use Luthfi\XAuth\Infrastructure\Scheduler\KickTask;
+use ChernegaSergiy\Language\TranslatorInterface;
 use pocketmine\player\Player;
 use pocketmine\plugin\PluginBase;
 use pocketmine\scheduler\TaskHandler;
@@ -18,7 +19,7 @@ class KickTaskManager {
     public function __construct(
         private PluginBase $plugin,
         private Config $configData,
-        private Config $customMessages,
+        private TranslatorInterface $translator,
     ) {}
 
     public function cancel(Player $player): void {
@@ -32,8 +33,9 @@ class KickTaskManager {
     public function schedule(Player $player): void {
         $loginTimeout = (int)($this->configData->getNested("session.login-timeout") ?? 30);
         if ($loginTimeout > 0) {
+            $message = $this->translator->translateFor($player, "messages.login_timeout");
             $this->kickTasks[$player->getName()] = $this->plugin->getScheduler()->scheduleDelayedTask(
-                new KickTask($player, $this->customMessages),
+                new KickTask($player, $message),
                 $loginTimeout * 20
             );
         }

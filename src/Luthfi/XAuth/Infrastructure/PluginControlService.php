@@ -36,7 +36,6 @@ class PluginControlService {
 
     public function __construct(
         private PluginBase $plugin,
-        private Config $customMessages,
         private VisibilityManager $visibilityManager,
     ) {}
 
@@ -50,7 +49,6 @@ class PluginControlService {
         ];
 
         $config->reload();
-        $this->customMessages->reload();
 
         $newData = [
             'in_world_visibility' => (array)$config->get('in_world_visibility', []),

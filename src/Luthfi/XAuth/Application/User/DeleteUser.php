@@ -13,9 +13,9 @@ use Luthfi\XAuth\Domain\Exception\NotRegisteredException;
 use Luthfi\XAuth\Domain\Exception\UnregistrationNotInitiatedException;
 use Luthfi\XAuth\Domain\User\PasswordHasher;
 use Luthfi\XAuth\Domain\User\UserRepository;
+use ChernegaSergiy\Language\TranslatorInterface;
 use pocketmine\player\Player;
 use pocketmine\plugin\PluginBase;
-use pocketmine\utils\Config;
 
 class DeleteUser {
 
@@ -26,7 +26,7 @@ class DeleteUser {
         private UserRepository $userRepository,
         private PasswordHasher $passwordHasher,
         private PluginBase $plugin,
-        private Config $customMessages,
+        private TranslatorInterface $translator,
         private AuthenticationFacade $authenticationService,
     ) {}
 
@@ -56,7 +56,7 @@ class DeleteUser {
         yield from $this->userRepository->delete($player->getName());
         (new PlayerUnregisterEvent($player))->call();
 
-        $kickMessage = (string)($this->customMessages->get("messages.unregister_success_kick") ?? "§aYour account has been successfully unregistered.");
+        $kickMessage = $this->translator->translateFor($player, "messages.unregister_success_kick");
         $player->kick($kickMessage);
     }
 
@@ -72,7 +72,7 @@ class DeleteUser {
         $player = $this->plugin->getServer()->getPlayerExact($playerName);
         if ($player !== null) {
             yield from $this->authenticationService->handleLogout($player);
-            $player->sendMessage((string)(($this->customMessages->get("messages"))["account_unregistered_by_admin"] ?? "§eYour account has been unregistered by an administrator. Please register again."));
+            $player->sendMessage($this->translator->translateFor($player, "messages.account_unregistered_by_admin"));
         }
 
         return $player;

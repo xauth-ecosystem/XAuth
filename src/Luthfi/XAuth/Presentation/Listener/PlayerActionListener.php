@@ -29,8 +29,8 @@ namespace Luthfi\XAuth\Presentation\Listener;
 
 use Luthfi\XAuth\Application\Auth\AuthenticationFacade;
 use Luthfi\XAuth\Domain\Event\PlayerAuthActionEvent;
+use ChernegaSergiy\Language\TranslatorInterface;
 use pocketmine\plugin\PluginBase;
-use pocketmine\utils\Config;
 use pocketmine\event\block\BlockBreakEvent;
 use pocketmine\event\block\BlockPlaceEvent;
 use pocketmine\event\Cancellable;
@@ -53,11 +53,12 @@ class PlayerActionListener implements Listener {
 
     private PluginBase $plugin;
     private AuthenticationFacade $authenticationService;
+    private TranslatorInterface $translator;
 
-    public function __construct(PluginBase $plugin, AuthenticationFacade $authenticationService, Config $customMessages) {
+    public function __construct(PluginBase $plugin, AuthenticationFacade $authenticationService, TranslatorInterface $translator) {
         $this->plugin = $plugin;
         $this->authenticationService = $authenticationService;
-        $this->customMessages = $customMessages;
+        $this->translator = $translator;
     }
 
     private function handleAction(Player $player, string $actionType, Cancellable $event): void {
@@ -122,7 +123,7 @@ class PlayerActionListener implements Listener {
 
         $this->handleAction($player, PlayerAuthActionEvent::ACTION_CHAT, $event);
         if ($event->isCancelled()) {
-            $message = (string)(((array)$this->customMessages->get("messages"))["chat_not_allowed"]);
+            $message = $this->translator->translateFor($player, "messages.chat_not_allowed");
             if (!empty($message)) {
                 $player->sendMessage($message);
             }
@@ -136,7 +137,7 @@ class PlayerActionListener implements Listener {
         }
 
         if ($this->authenticationService->isForcingPasswordChange($player)) {
-            $message = (string)(((array)$this->customMessages->get("messages"))["force_change_password_prompt"]);
+            $message = $this->translator->translateFor($player, "messages.force_change_password_prompt");
             if (!empty($message)) {
                 $player->sendMessage($message);
             }
@@ -162,7 +163,7 @@ class PlayerActionListener implements Listener {
             return; // Allow other plugins to handle it
         }
 
-        $message = (string)(((array)$this->customMessages->get("messages"))["command_not_allowed"]);
+        $message = $this->translator->translateFor($player, "messages.command_not_allowed");
         if (!empty($message)) {
             $player->sendMessage($message);
         }

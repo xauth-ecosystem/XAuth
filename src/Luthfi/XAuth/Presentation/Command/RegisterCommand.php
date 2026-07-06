@@ -35,6 +35,7 @@ use Luthfi\XAuth\Domain\Exception\AlreadyLoggedInException;
 use Luthfi\XAuth\Domain\Exception\AlreadyRegisteredException;
 use Luthfi\XAuth\Domain\Exception\PasswordMismatchException;
 use Luthfi\XAuth\Domain\Exception\RegistrationRateLimitException;
+use ChernegaSergiy\Language\TranslatorInterface;
 use pocketmine\command\Command;
 use pocketmine\command\CommandSender;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
@@ -42,7 +43,6 @@ use pocketmine\player\Player;
 use pocketmine\plugin\PluginBase;
 use pocketmine\plugin\PluginOwned;
 use pocketmine\plugin\PluginOwnedTrait;
-use pocketmine\utils\Config;
 use SOFe\AwaitGenerator\Await;
 use Throwable;
 
@@ -52,28 +52,25 @@ class RegisterCommand extends Command implements PluginOwned {
     public function __construct(
         private readonly RegistrationFacade $registrationService,
         private readonly AuthenticationFlowManager $authenticationFlowManager,
-        private readonly Config $customMessages,
+        private readonly TranslatorInterface $translator,
         private readonly PluginBase $plugin
     ) {
-        $messages = (array)$this->customMessages->get("messages");
         parent::__construct(
             "register",
-            (string)($messages["register_command_description"] ?? "Register your account"),
-            (string)($messages["register_command_usage"] ?? "/register <password> <confirm_password>")
+            $this->translator->translate($this->translator->getDefaultLocale(), "messages.register_command_description", [], null),
+            $this->translator->translate($this->translator->getDefaultLocale(), "messages.register_command_usage", [], null)
         );
         $this->setPermission("xauth.command.register");
     }
 
     public function execute(CommandSender $sender, string $label, array $args): bool {
-        $messages = (array)$this->customMessages->get("messages");
-
         if (!$sender instanceof Player) {
-            $sender->sendMessage((string)($messages["command_only_in_game"] ?? "§cThis command can only be used in-game."));
+            $sender->sendMessage($this->translator->translateFor($sender, "messages.command_only_in_game"));
             return false;
         }
 
         if (count($args) !== 2) {
-            $sender->sendMessage($this->getUsage());
+            $sender->sendMessage($this->translator->translateFor($sender, "messages.register_usage"));
             return false;
         }
 
@@ -87,28 +84,28 @@ class RegisterCommand extends Command implements PluginOwned {
                 $context->setLoginType(PlayerPreAuthenticateEvent::LOGIN_TYPE_REGISTRATION);
                 $this->authenticationFlowManager->completeStep($sender, 'xauth_register');
             },
-            function(Throwable $e) use ($sender, $messages): void {
+            function(Throwable $e) use ($sender): void {
                 switch (true) {
                     case $e instanceof AlreadyLoggedInException:
-                        $sender->sendMessage((string)($messages["already_logged_in"] ?? "§cYou are already logged in."));
+                        $sender->sendMessage($this->translator->translateFor($sender, "messages.already_logged_in"));
                         break;
                     case $e instanceof AlreadyRegisteredException:
-                        $sender->sendMessage((string)($messages["already_registered"] ?? "§cYou are already registered. Please use /login <password> to log in."));
+                        $sender->sendMessage($this->translator->translateFor($sender, "messages.already_registered"));
                         break;
                     case $e instanceof AccountLockedException:
-                        $sender->sendMessage((string)($messages["account_locked_by_admin"] ?? "§cYour account has been locked by an administrator."));
+                        $sender->sendMessage($this->translator->translateFor($sender, "messages.account_locked_by_admin"));
                         break;
                     case $e instanceof RegistrationRateLimitException:
-                        $sender->sendMessage((string)($messages["registration_ip_limit_reached"]));
+                        $sender->sendMessage($this->translator->translateFor($sender, "messages.registration_ip_limit_reached"));
                         break;
                     case $e instanceof PasswordMismatchException:
-                        $sender->sendMessage((string)($messages["password_mismatch"] ?? "§cPasswords do not match."));
+                        $sender->sendMessage($this->translator->translateFor($sender, "messages.password_mismatch"));
                         break;
                     case $e instanceof InvalidCommandSyntaxException:
                         $sender->sendMessage($e->getMessage());
                         break;
                     default:
-                        $sender->sendMessage((string)($messages["unexpected_error"] ?? "§cAn unexpected error occurred. Please try again."));
+                        $sender->sendMessage($this->translator->translateFor($sender, "messages.unexpected_error"));
                         $this->plugin->getLogger()->error("An unexpected error occurred during command registration: " . $e->getMessage());
                         break;
                 }

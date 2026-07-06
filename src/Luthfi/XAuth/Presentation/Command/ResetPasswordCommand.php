@@ -32,6 +32,7 @@ use Luthfi\XAuth\Domain\Exception\IncorrectPasswordException;
 use Luthfi\XAuth\Domain\Exception\NotRegisteredException;
 use Luthfi\XAuth\Domain\Exception\PasswordMismatchException;
 use Luthfi\XAuth\Presentation\Form\FormManager;
+use ChernegaSergiy\Language\TranslatorInterface;
 use pocketmine\command\Command;
 use pocketmine\command\CommandSender;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
@@ -39,7 +40,6 @@ use pocketmine\player\Player;
 use pocketmine\plugin\PluginBase;
 use pocketmine\plugin\PluginOwned;
 use pocketmine\plugin\PluginOwnedTrait;
-use pocketmine\utils\Config;
 use SOFe\AwaitGenerator\Await;
 use Throwable;
 
@@ -49,23 +49,20 @@ class ResetPasswordCommand extends Command implements PluginOwned {
     public function __construct(
         private readonly AuthenticationFacade $authenticationService,
         private readonly FormManager $formManager,
-        private readonly Config $customMessages,
+        private readonly TranslatorInterface $translator,
         private readonly PluginBase $plugin
     ) {
-        $messages = (array)$this->customMessages->get("messages");
         parent::__construct(
             "resetpassword",
-            (string)($messages["resetpassword_command_description"] ?? "Reset your password"),
-            (string)($messages["resetpassword_command_usage"] ?? "/resetpassword <old_password> <new_password> <confirm_password>")
+            $this->translator->translate($this->translator->getDefaultLocale(), "messages.resetpassword_command_description", [], null),
+            $this->translator->translate($this->translator->getDefaultLocale(), "messages.resetpassword_command_usage", [], null)
         );
         $this->setPermission("xauth.command.resetpassword");
     }
 
     public function execute(CommandSender $sender, string $label, array $args): bool {
-        $messages = (array)$this->customMessages->get("messages");
-
         if (!$sender instanceof Player) {
-            $sender->sendMessage((string)($messages["command_only_in_game"] ?? "§cThis command can only be used in-game."));
+            $sender->sendMessage($this->translator->translateFor($sender, "messages.command_only_in_game"));
             return false;
         }
 
@@ -86,25 +83,25 @@ class ResetPasswordCommand extends Command implements PluginOwned {
 
         Await::g2c(
             $this->authenticationService->handleChangePasswordRequest($sender, $oldPassword, $newPassword, $confirmNewPassword),
-            function() use ($sender, $messages): void {
-                $sender->sendMessage((string)($messages["change_password_success"] ?? "§aYour password has been changed successfully."));
+            function() use ($sender): void {
+                $sender->sendMessage($this->translator->translateFor($sender, "messages.change_password_success"));
             },
-            function(Throwable $e) use ($sender, $messages): void {
+            function(Throwable $e) use ($sender): void {
                 switch (true) {
                     case $e instanceof IncorrectPasswordException:
-                        $sender->sendMessage((string)($messages["incorrect_password"] ?? "§cIncorrect password."));
+                        $sender->sendMessage($this->translator->translateFor($sender, "messages.incorrect_password"));
                         break;
                     case $e instanceof PasswordMismatchException:
-                        $sender->sendMessage((string)($messages["password_mismatch"] ?? "§cPasswords do not match."));
+                        $sender->sendMessage($this->translator->translateFor($sender, "messages.password_mismatch"));
                         break;
                     case $e instanceof InvalidCommandSyntaxException:
                         $sender->sendMessage($e->getMessage());
                         break;
                     case $e instanceof NotRegisteredException:
-                        $sender->sendMessage((string)($messages["not_registered"] ?? "§cYou are not registered."));
+                        $sender->sendMessage($this->translator->translateFor($sender, "messages.not_registered"));
                         break;
                     default:
-                        $sender->sendMessage((string)($messages["unexpected_error"] ?? "§cAn unexpected error occurred. Please try again."));
+                        $sender->sendMessage($this->translator->translateFor($sender, "messages.unexpected_error"));
                         $this->plugin->getLogger()->error("An unexpected error occurred during password reset command: " . $e->getMessage());
                         break;
                 }

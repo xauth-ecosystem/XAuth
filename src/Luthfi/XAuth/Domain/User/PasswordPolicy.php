@@ -28,7 +28,7 @@ declare(strict_types=1);
 namespace Luthfi\XAuth\Domain\User;
 
 use pocketmine\plugin\PluginBase;
-use pocketmine\utils\Config;
+use ChernegaSergiy\Language\TranslatorInterface;
 
 class PasswordPolicy {
 
@@ -36,7 +36,7 @@ class PasswordPolicy {
 
     public function __construct(
         private PluginBase $plugin,
-        private Config $customMessages,
+        private TranslatorInterface $translator,
     ) {
         $this->loadWeakPasswords();
     }
@@ -49,7 +49,6 @@ class PasswordPolicy {
             $weakPasswordFile = (string)($config->getNested('password_complexity.weak_password_list_file') ?? 'weak_passwords.txt');
             $filePath = $this->plugin->getDataFolder() . $weakPasswordFile;
 
-            // If using the default weak password file and it doesn't exist, create it.
             if ($weakPasswordFile === 'weak_passwords.txt' && !file_exists($filePath)) {
                 $this->plugin->saveResource('weak_passwords.txt');
             }
@@ -68,40 +67,37 @@ class PasswordPolicy {
 
         $minLength = (int)($complexityConfig['min_length'] ?? 6);
         if (strlen($password) < $minLength) {
-            $message = (string)(((array)$this->customMessages->get("messages"))["password_too_short"]);
-            return str_replace('{length}', (string)$minLength, $message);
+            return $this->translator->translate($this->translator->getDefaultLocale(), "messages.password_too_short", ['length' => (string)$minLength]);
         }
 
         $maxLength = (int)($complexityConfig['max_length'] ?? 64);
         if (strlen($password) > $maxLength) {
-            $message = (string)(((array)$this->customMessages->get("messages"))["password_too_long"]);
-            return str_replace('{length}', (string)$maxLength, $message);
+            return $this->translator->translate($this->translator->getDefaultLocale(), "messages.password_too_long", ['length' => (string)$maxLength]);
         }
 
         $requireUppercase = (bool)($complexityConfig['require_uppercase'] ?? false);
         if ($requireUppercase && !preg_match('/[A-Z]/', $password)) {
-            return (string)(((array)$this->customMessages->get("messages"))["password_no_uppercase"]);
+            return $this->translator->translate($this->translator->getDefaultLocale(), "messages.password_no_uppercase");
         }
 
         $requireLowercase = (bool)($complexityConfig['require_lowercase'] ?? false);
         if ($requireLowercase && !preg_match('/[a-z]/', $password)) {
-            return (string)(((array)$this->customMessages->get("messages"))["password_no_lowercase"]);
+            return $this->translator->translate($this->translator->getDefaultLocale(), "messages.password_no_lowercase");
         }
 
         $requireNumber = (bool)($complexityConfig['require_number'] ?? false);
         if ($requireNumber && !preg_match('/[0-9]/', $password)) {
-            return (string)(((array)$this->customMessages->get("messages"))["password_no_number"]);
+            return $this->translator->translate($this->translator->getDefaultLocale(), "messages.password_no_number");
         }
 
         $requireSymbol = (bool)($complexityConfig['require_symbol'] ?? false);
         if ($requireSymbol && !preg_match('/[^a-zA-Z0-9]/', $password)) {
-            return (string)(((array)$this->customMessages->get("messages"))["password_no_symbol"]);
+            return $this->translator->translate($this->translator->getDefaultLocale(), "messages.password_no_symbol");
         }
 
-        // Check against weak password list
         if ((bool)($complexityConfig['enable_weak_password_check'] ?? false)) {
             if (in_array(strtolower($password), $this->weakPasswords, true)) {
-                return (string)(((array)$this->customMessages->get("messages"))["password_is_weak"]);
+                return $this->translator->translate($this->translator->getDefaultLocale(), "messages.password_is_weak");
             }
         }
 

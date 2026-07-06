@@ -34,6 +34,7 @@ use Luthfi\XAuth\Application\Player\PlayerStateFacade;
 use Luthfi\XAuth\Domain\User\UserRepository;
 use Luthfi\XAuth\Infrastructure\KickTaskManager;
 use Luthfi\XAuth\Domain\Event\PlayerPreAuthenticateEvent;
+use ChernegaSergiy\Language\TranslatorInterface;
 use pocketmine\player\Player;
 use pocketmine\plugin\PluginBase;
 use pocketmine\utils\Config;
@@ -55,7 +56,7 @@ class AuthenticationFlowManager {
     public function __construct(
         private PluginBase $plugin,
         private Config $configData,
-        private Config $customMessages,
+        private TranslatorInterface $translator,
         private PlayerStateFacade $playerStateService,
         private AuthenticationFacade $authenticationService,
         private KickTaskManager $kickTaskManager,

@@ -32,13 +32,13 @@ use Luthfi\XAuth\Application\User\RegistrationFacade;
 use Luthfi\XAuth\Domain\Exception\ConfirmationExpiredException;
 use Luthfi\XAuth\Domain\Exception\IncorrectPasswordException;
 use Luthfi\XAuth\Domain\Exception\UnregistrationNotInitiatedException;
+use ChernegaSergiy\Language\TranslatorInterface;
 use pocketmine\command\Command;
 use pocketmine\command\CommandSender;
 use pocketmine\player\Player;
 use pocketmine\plugin\PluginBase;
 use pocketmine\plugin\PluginOwned;
 use pocketmine\plugin\PluginOwnedTrait;
-use pocketmine\utils\Config;
 use SOFe\AwaitGenerator\Await;
 use Throwable;
 
@@ -48,40 +48,37 @@ class UnregisterCommand extends Command implements PluginOwned {
     public function __construct(
         private readonly AuthenticationFacade $authenticationService,
         private readonly RegistrationFacade $registrationService,
-        private readonly Config $customMessages,
+        private readonly TranslatorInterface $translator,
         private readonly PluginBase $plugin
     ) {
-        $messages = (array)$this->customMessages->get("messages");
         parent::__construct(
             "unregister",
-            (string)($messages["unregister_command_description"] ?? "Unregister your account."),
-            (string)($messages["unregister_command_usage"] ?? "/unregister [confirm <password>]")
+            $this->translator->translate($this->translator->getDefaultLocale(), "messages.unregister_command_description", [], null),
+            $this->translator->translate($this->translator->getDefaultLocale(), "messages.unregister_command_usage", [], null)
         );
         $this->setPermission("xauth.command.unregister");
     }
 
     public function execute(CommandSender $sender, string $label, array $args): bool {
-        $messages = (array)$this->customMessages->get("messages");
-
         $commandSettings = (array)$this->plugin->getConfig()->get("command_settings");
         if (isset($commandSettings['allow_player_self_unregister']) && $commandSettings['allow_player_self_unregister'] === false) {
-            $sender->sendMessage((string)($messages["unregister_disabled"] ?? "§cAccount unregistration is disabled on this server."));
+            $sender->sendMessage($this->translator->translateFor($sender, "messages.unregister_disabled"));
             return false;
         }
 
         if (!$sender instanceof Player) {
-            $sender->sendMessage((string)($messages["command_only_in_game"] ?? "§cThis command can only be used in-game."));
+            $sender->sendMessage($this->translator->translateFor($sender, "messages.command_only_in_game"));
             return false;
         }
 
         if (!$this->authenticationService->isPlayerAuthenticated($sender)) {
-            $sender->sendMessage((string)($messages["not_logged_in"] ?? "§cYou are not logged in."));
+            $sender->sendMessage($this->translator->translateFor($sender, "messages.not_logged_in"));
             return false;
         }
 
         if (isset($args[0]) && strtolower($args[0]) === 'confirm') {
             if (!isset($args[1])) {
-                $sender->sendMessage((string)($messages["unregister_password_missing"] ?? "§cUsage: /unregister confirm <password>"));
+                $sender->sendMessage($this->translator->translateFor($sender, "messages.unregister_password_missing"));
                 return false;
             }
             $password = $args[1];
@@ -89,21 +86,20 @@ class UnregisterCommand extends Command implements PluginOwned {
             Await::g2c(
                 $this->registrationService->confirmUnregistration($sender, $password),
                 static function(): void {
-                    // Success is handled by the service (player is kicked)
                 },
-                function(Throwable $e) use ($sender, $messages): void {
+                function(Throwable $e) use ($sender): void {
                     switch (true) {
                         case $e instanceof UnregistrationNotInitiatedException:
-                            $sender->sendMessage((string)($messages["unregister_not_initiated"] ?? "§cYou have not started the unregistration process. Type /unregister first."));
+                            $sender->sendMessage($this->translator->translateFor($sender, "messages.unregister_not_initiated"));
                             break;
                         case $e instanceof ConfirmationExpiredException:
-                            $sender->sendMessage((string)($messages["unregister_confirmation_expired"] ?? "§cUnregistration confirmation expired. Please start over."));
+                            $sender->sendMessage($this->translator->translateFor($sender, "messages.unregister_confirmation_expired"));
                             break;
                         case $e instanceof IncorrectPasswordException:
-                            $sender->sendMessage((string)($messages["incorrect_password"] ?? "§cIncorrect password."));
+                            $sender->sendMessage($this->translator->translateFor($sender, "messages.incorrect_password"));
                             break;
                         default:
-                            $sender->sendMessage((string)($messages["unexpected_error"] ?? "§cAn unexpected error occurred. Please try again."));
+                            $sender->sendMessage($this->translator->translateFor($sender, "messages.unexpected_error"));
                             $this->plugin->getLogger()->error("An unexpected error occurred during unregistration confirmation: " . $e->getMessage());
                             break;
                     }
@@ -111,7 +107,7 @@ class UnregisterCommand extends Command implements PluginOwned {
             );
         } else {
             $this->registrationService->initiateUnregistration($sender);
-            $sender->sendMessage((string)($messages["unregister_initiate"] ?? "§eAre you sure you want to unregister? This action is irreversible.§r\n§eType §f/unregister confirm <password>§e within 60 seconds to confirm."));
+            $sender->sendMessage($this->translator->translateFor($sender, "messages.unregister_initiate"));
         }
         return true;
     }

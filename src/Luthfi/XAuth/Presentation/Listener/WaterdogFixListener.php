@@ -36,14 +36,15 @@ use pocketmine\network\mcpe\protocol\LoginPacket;
 use pocketmine\network\PacketHandlingException;
 use pocketmine\plugin\PluginBase;
 use pocketmine\Server;
-use pocketmine\utils\Config;
+use ChernegaSergiy\Language\TranslatorInterface;
+use pocketmine\utils\TextFormat;
 use Throwable;
 
 class WaterdogFixListener implements Listener {
 
     public function __construct(
         private PluginBase $plugin,
-        private Config $customMessages,
+        private TranslatorInterface $translator,
     ) {}
 
     /**
@@ -72,7 +73,7 @@ class WaterdogFixListener implements Listener {
                 )
                 && $forceWaterdog
             ) {
-                $kickMessage = (string)(((array)$this->customMessages->get("messages"))["waterdog_kick_message"] ?? "§cNot authenticated to WaterdogPE!\n§cPlease connect to WaterdogPE!");
+                $kickMessage = $this->translator->translate($this->translator->getDefaultLocale(), "messages.waterdog_kick_message", [], null);
                 $event->getOrigin()->disconnect($kickMessage);
                 return;
             }
@@ -83,7 +84,7 @@ class WaterdogFixListener implements Listener {
                     $event->getOrigin(),
                     $clientData["Waterdog_XUID"],
                     $clientData["Waterdog_IP"],
-                    $this->customMessages
+                    $this->translator
                 ));
             }
             unset($clientData);

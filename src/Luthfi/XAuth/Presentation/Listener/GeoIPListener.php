@@ -30,13 +30,14 @@ namespace Luthfi\XAuth\Presentation\Listener;
 use pocketmine\event\Listener;
 use pocketmine\event\player\PlayerPreLoginEvent;
 use pocketmine\plugin\PluginBase;
-use pocketmine\utils\Config;
+use ChernegaSergiy\Language\TranslatorInterface;
+use pocketmine\utils\TextFormat;
 
 class GeoIPListener implements Listener {
 
     public function __construct(
         private PluginBase $plugin,
-        private Config $customMessages,
+        private TranslatorInterface $translator,
     ) {}
 
     public function onPlayerPreLogin(PlayerPreLoginEvent $event): void {
@@ -46,17 +47,19 @@ class GeoIPListener implements Listener {
         $countryList = (array)($geoipConfig['country-list'] ?? []);
         $mode = (string)($geoipConfig['mode'] ?? 'blacklist');
 
+        $localKickMessage = $this->translator->translate($this->translator->getDefaultLocale(), "messages.geoip.kick.local", [], null);
+        $countryKickMessage = $this->translator->translate($this->translator->getDefaultLocale(), "messages.geoip.kick.country", [], null);
+
         if ($isLocal) {
             $isListed = in_array("LOCALHOST", $countryList, true);
             if (($mode === "blacklist" && $isListed) || ($mode === "whitelist" && !$isListed)) {
-                $message = (string)(((array)$this->customMessages->get("messages"))["geoip.kick.local"] ?? "Connections from local networks are not allowed.");
-                $event->setKickFlag(PlayerPreLoginEvent::KICK_FLAG_BANNED, $message);
+                $event->setKickFlag(PlayerPreLoginEvent::KICK_FLAG_BANNED, $localKickMessage);
             }
             return;
         }
 
-        $this->plugin->getServer()->getAsyncPool()->submitTask(new class($ip, $event->getPlayerInfo()->getUsername(), $geoipConfig, $this->customMessages->get("messages")) extends \pocketmine\scheduler\AsyncTask {
-            public function __construct(private string $ip, private string $username, private array $config, private array $messages) {}
+        $this->plugin->getServer()->getAsyncPool()->submitTask(new class($ip, $event->getPlayerInfo()->getUsername(), $geoipConfig, $countryKickMessage) extends \pocketmine\scheduler\AsyncTask {
+            public function __construct(private string $ip, private string $username, private array $config, private string $kickMessage) {}
 
             public function onRun(): void {
                 $url = "http://ip-api.com/json/" . $this->ip . "?fields=status,countryCode";
@@ -68,7 +71,7 @@ class GeoIPListener implements Listener {
                 $resolve = [];
                 $forcedHosts = $this->config["network"]["force-resolve-hosts"] ?? [];
                 foreach($forcedHosts as $domain => $ip_address) {
-                    $resolve[] = $domain . ":80:" . $ip_address; // Port 80 for HTTP
+                    $resolve[] = $domain . ":80:" . $ip_address;
                 }
                 if(!empty($resolve)){
                     curl_setopt($ch, CURLOPT_RESOLVE, $resolve);
@@ -113,8 +116,7 @@ class GeoIPListener implements Listener {
                 if (($mode === "blacklist" && $isListed) || ($mode === "whitelist" && !$isListed)) {
                     $player = $server->getPlayerExact($this->username);
                     if($player !== null){
-                        $message = (string)($this->messages["geoip.kick.country"] ?? "Your country is not allowed on this server.");
-                        $player->kick($message);
+                        $player->kick($this->kickMessage);
                     }
                 }
             }

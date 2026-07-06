@@ -36,6 +36,7 @@ use Luthfi\XAuth\Infrastructure\KickTaskManager;
 use Luthfi\XAuth\Presentation\Form\FormManager;
 use Luthfi\XAuth\Presentation\Title\TitleService;
 use Luthfi\XAuth\Domain\Event\PlayerRegisterEvent;
+use ChernegaSergiy\Language\TranslatorInterface;
 use pocketmine\player\Player;
 use pocketmine\plugin\PluginBase;
 use pocketmine\utils\Config;
@@ -46,7 +47,7 @@ class XAuthRegisterStep implements AuthenticationStep, FinalizableStep {
     public function __construct(
         private PluginBase $plugin,
         private Config $configData,
-        private Config $customMessages,
+        private TranslatorInterface $translator,
         private FormManager $formManager,
         private TitleService $titleService,
         private AuthenticationFacade $authenticationService,
@@ -73,8 +74,7 @@ class XAuthRegisterStep implements AuthenticationStep, FinalizableStep {
                 $this->playerStateService->protectPlayer($player);
                 $this->kickTaskManager->schedule($player);
                 $formsEnabled = $this->configData->getNested("forms.enabled", true);
-                $message = (string)(((array)$this->customMessages->get("messages"))["register_prompt"]);
-                $player->sendMessage($message);
+                $player->sendMessage($this->translator->translateFor($player, "messages.register_prompt"));
                 if ($formsEnabled) {
                     $this->formManager->sendRegisterForm($player);
                 } else {
@@ -96,8 +96,7 @@ class XAuthRegisterStep implements AuthenticationStep, FinalizableStep {
 
     public function onFlowComplete(Player $player, AuthenticationContext $context): void {
         if ($context->wasStepCompleted($this->getId())) {
-            $messages = (array)$this->customMessages->get("messages");
-            $player->sendMessage((string)($messages["register_success"] ?? "§aYou have successfully registered!"));
+            $player->sendMessage($this->translator->translateFor($player, "messages.register_success"));
             $this->titleService->sendTitle($player, "register_success", 2 * 20);
         }
     }

@@ -29,9 +29,9 @@ namespace Luthfi\XAuth\Presentation\Expansion;
 
 use Luthfi\XAuth\Application\Auth\AuthenticationFacade;
 use MohamadRZ4\Placeholder\expansion\PlaceholderExpansion;
+use ChernegaSergiy\Language\TranslatorInterface;
 use pocketmine\player\Player;
 use pocketmine\plugin\PluginBase;
-use pocketmine\utils\Config;
 
 class XAuthExpansion extends PlaceholderExpansion {
 
@@ -39,7 +39,7 @@ class XAuthExpansion extends PlaceholderExpansion {
 
     public function __construct(
         private AuthenticationFacade $authenticationService,
-        private Config $customMessages,
+        private TranslatorInterface $translator,
         PluginBase $plugin,
     ) {
         $this->plugin = $plugin;
@@ -82,23 +82,19 @@ class XAuthExpansion extends PlaceholderExpansion {
 
         switch ($placeholder) {
             case "is_authenticated":
-                return $this->getTranslatedText($placeholder, $this->authenticationService->isPlayerAuthenticated($player));
+                return $this->getTranslatedText($placeholder, $this->authenticationService->isPlayerAuthenticated($player), $player);
             case "is_registered":
-                // TODO: This is not possible to implement synchronously with an async database.
-                // The original implementation was also broken.
                 return null;
             case "is_locked":
-                // TODO: This is not possible to implement synchronously with an async database.
-                // The original implementation was also broken.
                 return null;
         }
 
         return null;
     }
 
-    private function getTranslatedText(string $placeholder, bool $value): string {
+    private function getTranslatedText(string $placeholder, bool $value, Player $player): string {
         $key = "placeholders." . $placeholder . "." . ($value ? "true" : "false");
         $defaultValue = $value ? "Yes" : "No";
-        return (string)($this->customMessages->getNested($key) ?? $defaultValue);
+        return $this->translator->translateFor($player, $key);
     }
 }

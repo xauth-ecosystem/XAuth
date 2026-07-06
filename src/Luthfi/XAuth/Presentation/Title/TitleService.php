@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Luthfi\XAuth\Presentation\Title;
 
 use Luthfi\XAuth\Infrastructure\Scheduler\SendTitleTask;
+use ChernegaSergiy\Language\TranslatorInterface;
 use pocketmine\player\Player;
 use pocketmine\plugin\PluginBase;
 use pocketmine\scheduler\TaskHandler;
-use pocketmine\utils\Config;
 
 class TitleService 
 {
@@ -17,33 +17,37 @@ class TitleService
 
     public function __construct(
         private PluginBase $plugin,
-        private Config $configData,
-        private Config $customMessages,
+        private TranslatorInterface $translator,
     ) {}
 
     public function sendTitle(Player $player, string $messageKey, ?int $duration = null, bool $isRepeating = false): void
     {
         $this->clearTitle($player);
 
-        if (!(bool)$this->configData->get("enable_titles", false)) {
+        $configData = $this->plugin->getConfig();
+        if (!(bool)$configData->get("enable_titles", false)) {
             return;
         }
 
-        $titlesConfig = (array)$this->customMessages->get("titles", []);
-        if (!isset($titlesConfig[$messageKey])) {
+        $titleKey = "titles." . $messageKey . ".title";
+        $subtitleKey = "titles." . $messageKey . ".subtitle";
+        $intervalKey = "titles." . $messageKey . ".interval";
+
+        $title = $this->translator->translateFor($player, $titleKey);
+        $subtitle = $this->translator->translateFor($player, $subtitleKey);
+
+        if ($title === $titleKey && $subtitle === $subtitleKey) {
             return;
         }
 
-        $titleConfig = $titlesConfig[$messageKey];
-        $title = (string)($titleConfig["title"] ?? "");
-        $subtitle = (string)($titleConfig["subtitle"] ?? "");
-        
+        $interval = (int)($this->translator->translateFor($player, $intervalKey));
+
         if ($isRepeating) {
-            $interval = (int)(($titleConfig["interval"] ?? 2) * 20);
-            $handler = $this->plugin->getScheduler()->scheduleRepeatingTask(new SendTitleTask($this->plugin, $player, $title, $subtitle), $interval);
+            $taskInterval = $interval * 20;
+            $handler = $this->plugin->getScheduler()->scheduleRepeatingTask(new SendTitleTask($this->plugin, $player, $title, $subtitle), $taskInterval);
             $this->titleTasks[$player->getName()] = $handler;
         } else {
-            $stay = $duration ?? (int)(($titleConfig["interval"] ?? 2) * 20);
+            $stay = $duration ?? ($interval * 20);
             $player->sendTitle($title, $subtitle, 10, $stay, 10);
         }
     }

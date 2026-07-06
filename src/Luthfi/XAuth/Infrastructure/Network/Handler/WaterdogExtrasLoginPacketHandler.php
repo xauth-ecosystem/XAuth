@@ -39,24 +39,22 @@ use pocketmine\network\PacketHandlingException;
 use pocketmine\player\PlayerInfo;
 use pocketmine\player\XboxLivePlayerInfo;
 use pocketmine\Server;
-use pocketmine\utils\Config;
+use ChernegaSergiy\Language\TranslatorInterface;
 use pocketmine\utils\TextFormat;
 use ReflectionClass;
 use ReflectionProperty;
 
 class WaterdogExtrasLoginPacketHandler extends LoginPacketHandler {
 
-    public function __construct(Server $server, NetworkSession $session, string $Waterdog_XUID, string $Waterdog_IP, Config $customMessages) {
-        $messages = (array)$customMessages->get("messages", []);
-
+    public function __construct(Server $server, NetworkSession $session, string $Waterdog_XUID, string $Waterdog_IP, TranslatorInterface $translator) {
         if ($server->getOnlineMode()) {
-            $kickMessage = (string)($messages['waterdog_online_mode_kick'] ?? "This server is in online-mode and cannot accept logins from a proxy.");
+            $kickMessage = $translator->translate($translator->getDefaultLocale(), "messages.waterdog_online_mode_kick", [], null);
             $session->disconnect($kickMessage);
             return;
         }
 
         if ($server->getConfigGroup()->getPropertyBool("player.verify-xuid", true)) {
-            $kickMessage = (string)($messages['waterdog_verify_xuid_kick'] ?? "This server has XUID verification enabled and cannot accept logins from a proxy.");
+            $kickMessage = $translator->translate($translator->getDefaultLocale(), "messages.waterdog_verify_xuid_kick", [], null);
             $session->disconnect($kickMessage);
             return;
         }

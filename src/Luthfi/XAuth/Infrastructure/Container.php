@@ -115,14 +115,14 @@ class Container {
 
         // ─── Circular-aware services (auth wire later) ───────────────
 
-        $this->visibilityManager = new VisibilityManager($this->plugin, $this->configData, $this->languageMessages);
+        $this->visibilityManager = new VisibilityManager($this->plugin, $this->configData);
 
         $createSession = new CreateSession($sessionRepository);
         $restoreSession = new RestoreSession($sessionRepository);
         $terminateSession = new TerminateSession($sessionRepository);
         $this->sessionService = new SessionFacade($this->plugin, $restoreSession, $createSession, $terminateSession, $this->deviceIdStore);
 
-        $this->titleService = new TitleService($this->plugin, $this->configData, $this->languageMessages);
+        $this->titleService = new TitleService($this->plugin, $this->languageMessages);
 
         // ─── Use cases without auth dependency ───────────────────────
 
@@ -168,7 +168,7 @@ class Container {
 
         // ─── Services with auth dependency ───────────────────────────
 
-        $this->pluginControlService = new PluginControlService($this->plugin, $this->languageMessages, $this->visibilityManager);
+        $this->pluginControlService = new PluginControlService($this->plugin, $this->visibilityManager);
 
         // ─── Authentication flow manager (no longer needs FormManager) ─
 

@@ -7,8 +7,8 @@ namespace Luthfi\XAuth\Infrastructure;
 use Luthfi\XAuth\Infrastructure\Persistence\ConnectorFactory;
 use Luthfi\XAuth\Infrastructure\Persistence\SchemaManager;
 use Luthfi\XAuth\Domain\User\UserRepository;
+use ChernegaSergiy\Language\TranslatorInterface;
 use pocketmine\plugin\PluginBase;
-use pocketmine\utils\Config;
 use pocketmine\utils\TextFormat;
 use SOFe\AwaitGenerator\Await;
 use Throwable;
@@ -19,7 +19,7 @@ class MigrationManager {
 
     public function __construct(
         private PluginBase $plugin,
-        private Config $customMessages,
+        private TranslatorInterface $translator,
     ) {}
 
     public static function isMigrationInProgress(): bool {
@@ -45,7 +45,6 @@ class MigrationManager {
         Await::g2c(function() use ($sourceType, $destinationType) {
             $sourceConnector = null;
             $destinationConnector = null;
-            $messages = (array)$this->customMessages->get("messages");
 
             try {
                 $this->plugin->getLogger()->info("Creating database connectors...");
@@ -58,17 +57,13 @@ class MigrationManager {
                 $sourceSchema = new SchemaManager($this->plugin, $sourceConnector);
                 $destinationSchema = new SchemaManager($this->plugin, $destinationConnector);
 
-                // Initialize tables asynchronously
                 $sourceSchema->initialize(false);
                 $destinationSchema->initialize(false);
-                
-                // We can wait a bit or assumes inserts will queue up. 
-                // Ideally we should yield a simple query to ensure connection is ready, but init calls are fine.
                 
                 $this->plugin->getLogger()->info("Connectors created. Calculating total players from '{$sourceType}'...");
                 
                 $total = yield from $sourceRepo->count();
-                $this->plugin->getLogger()->info(str_replace('{count}', (string)$total, (string)($messages["xauth_migration_found_players"] ?? "Found {count} players to migrate.")));
+                $this->plugin->getLogger()->info($this->translator->translate($this->translator->getDefaultLocale(), "messages.xauth_migration_found_players", ['count' => (string)$total]));
 
                 if ($total === 0) {
                     $this->plugin->getLogger()->info("Nothing to migrate.");
@@ -91,14 +86,17 @@ class MigrationManager {
                         }
                         
                         $processedCount = $offset + count($playerDataBatch);
-                        $message = (string)($messages["xauth_migration_progress"] ?? "§aMigrated: {processed}/{total} (Skipped: {skipped})");
-                        $message = str_replace(['{processed}', '{total}', '{skipped}'], [(string)$processedCount, (string)$total, (string)$skippedCount], $message);
+                        $message = $this->translator->translate($this->translator->getDefaultLocale(), "messages.xauth_migration_progress", [
+                            'migrated' => (string)$migratedCount,
+                            'total' => (string)$total,
+                            'skipped' => (string)$skippedCount
+                        ]);
                         $this->plugin->getLogger()->info(TextFormat::clean($message));
                     }
 
-                    $this->plugin->getLogger()->info((string)($messages["xauth_migration_complete"] ?? "Migration complete!"));
-                    $this->plugin->getLogger()->info(str_replace('{count}', (string)$migratedCount, (string)($messages["xauth_migration_migrated_count"] ?? "- Migrated: {count} players")));
-                    $this->plugin->getLogger()->info(str_replace('{count}', (string)$skippedCount, (string)($messages["xauth_migration_skipped_count"] ?? "- Skipped (already exist): {count} players")));
+                    $this->plugin->getLogger()->info($this->translator->translate($this->translator->getDefaultLocale(), "messages.xauth_migration_complete"));
+                    $this->plugin->getLogger()->info($this->translator->translate($this->translator->getDefaultLocale(), "messages.xauth_migration_migrated_count", ['count' => (string)$migratedCount]));
+                    $this->plugin->getLogger()->info($this->translator->translate($this->translator->getDefaultLocale(), "messages.xauth_migration_skipped_count", ['count' => (string)$skippedCount]));
                 }
             } catch (Throwable $e) {
                 $this->plugin->getLogger()->error("Migration failed: " . $e->getMessage());

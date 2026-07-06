@@ -31,8 +31,8 @@ use Luthfi\XAuth\Application\Auth\AuthenticationFacade;
 use Luthfi\XAuth\Application\Auth\Pipeline\AuthenticationFlowManager;
 use Luthfi\XAuth\Domain\User\UserRepository;
 use Luthfi\XAuth\Infrastructure\DeviceIdStore;
+use ChernegaSergiy\Language\TranslatorInterface;
 use pocketmine\plugin\PluginBase;
-use pocketmine\utils\Config;
 use pocketmine\event\Listener;
 use pocketmine\event\player\PlayerJoinEvent;
 use pocketmine\event\player\PlayerPreLoginEvent;
@@ -46,11 +46,11 @@ class PlayerSessionListener implements Listener {
     private PluginBase $plugin;
     private AuthenticationFacade $authenticationService;
 
-    public function __construct(PluginBase $plugin, AuthenticationFacade $authenticationService, AuthenticationFlowManager $authenticationFlowManager, Config $customMessages, DeviceIdStore $deviceIdStore, UserRepository $userRepository) {
+    public function __construct(PluginBase $plugin, AuthenticationFacade $authenticationService, AuthenticationFlowManager $authenticationFlowManager, TranslatorInterface $translator, DeviceIdStore $deviceIdStore, UserRepository $userRepository) {
         $this->plugin = $plugin;
         $this->authenticationService = $authenticationService;
         $this->authenticationFlowManager = $authenticationFlowManager;
-        $this->customMessages = $customMessages;
+        $this->translator = $translator;
         $this->deviceIdStore = $deviceIdStore;
         $this->userRepository = $userRepository;
     }
@@ -76,7 +76,10 @@ class PlayerSessionListener implements Listener {
             }
 
             if (isset($ipCounts[$ip]) && $ipCounts[$ip] >= $maxJoinsPerIp) {
-                $message = (string)(((array)$this->customMessages->get("messages"))["ip_join_limit_exceeded"]);
+                $message = $this->translator->translate(
+                    $this->translator->getDefaultLocale(),
+                    "messages.ip_join_limit_exceeded"
+                );
                 $event->setKickFlag(PlayerPreLoginEvent::KICK_FLAG_BANNED, $message);
                 return;
             }

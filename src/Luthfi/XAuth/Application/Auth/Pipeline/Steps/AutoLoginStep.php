@@ -33,6 +33,7 @@ use Luthfi\XAuth\Domain\Session\SessionRepository;
 use Luthfi\XAuth\Infrastructure\DeviceIdStore;
 use Luthfi\XAuth\Presentation\Title\TitleService;
 use Luthfi\XAuth\Domain\Event\PlayerPreAuthenticateEvent;
+use ChernegaSergiy\Language\TranslatorInterface;
 use pocketmine\player\Player;
 use pocketmine\plugin\PluginBase;
 use pocketmine\utils\Config;
@@ -43,7 +44,7 @@ class AutoLoginStep implements AuthenticationStep, FinalizableStep {
     public function __construct(
         private PluginBase $plugin,
         private Config $configData,
-        private Config $customMessages,
+        private TranslatorInterface $translator,
         private TitleService $titleService,
         private AuthenticationFlowManager $authenticationFlowManager,
         private ?SessionRepository $sessionRepository,
@@ -99,8 +100,7 @@ class AutoLoginStep implements AuthenticationStep, FinalizableStep {
 
     public function onFlowComplete(Player $player, AuthenticationContext $context): void {
         if ($context->wasStepCompleted($this->getId())) {
-            $messages = (array)$this->customMessages->get("messages");
-            $player->sendMessage((string)($messages["auto_login_success"]));
+            $player->sendMessage($this->translator->translateFor($player, "messages.auto_login_success"));
             $this->titleService->sendTitle($player, "auto_login_success", 2 * 20);
         }
     }

@@ -29,19 +29,17 @@ namespace Luthfi\XAuth\Infrastructure\Scheduler;
 
 use pocketmine\player\Player;
 use pocketmine\scheduler\Task;
-use pocketmine\utils\Config;
 
 class KickTask extends Task {
 
     public function __construct(
         private Player $player,
-        private Config $customMessages,
+        private string $timeoutMessage,
     ) {}
 
     public function onRun(): void {
         if ($this->player->isOnline()) {
-            $message = (string)(((array)$this->customMessages->get("messages"))["login_timeout"] ?? "§cYou took too long to log in.");
-            $this->player->kick($message);
+            $this->player->kick($this->timeoutMessage);
         }
     }
 }

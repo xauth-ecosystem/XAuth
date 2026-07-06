@@ -43,6 +43,7 @@ use Luthfi\XAuth\Domain\Exception\PasswordMismatchException;
 use Luthfi\XAuth\Domain\Exception\PlayerBlockedException;
 use Luthfi\XAuth\Domain\Exception\RegistrationRateLimitException;
 use Luthfi\XAuth\Presentation\Title\TitleService;
+use ChernegaSergiy\Language\TranslatorInterface;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
 use pocketmine\player\Player;
 use pocketmine\plugin\PluginBase;
@@ -54,7 +55,7 @@ class FormManager {
 
     public function __construct(
         private PluginBase $plugin,
-        private Config $customMessages,
+        private TranslatorInterface $translator,
         private Config $configData,
         private RegistrationFacade $registrationService,
         private AuthenticationFacade $authenticationService,
@@ -66,18 +67,17 @@ class FormManager {
      * Shows the player the right prompt (login or register, form or title) after they have been logged out.
      */
     public function promptAfterLogout(Player $player, LogoutOutcome $outcome): void {
-        $messages = (array)$this->customMessages->get("messages");
         $formsEnabled = (bool)($this->configData->getNested("forms.enabled") ?? true);
 
         if ($outcome === LogoutOutcome::EXISTING_USER) {
-            $player->sendMessage((string)($messages["login_prompt"]));
+            $player->sendMessage($this->translator->translateFor($player, "messages.login_prompt"));
             if ($formsEnabled) {
                 $this->sendLoginForm($player);
             } else {
                 $this->titleService->sendTitle($player, "login_prompt", null, true);
             }
         } else {
-            $player->sendMessage((string)($messages["register_prompt"]));
+            $player->sendMessage($this->translator->translateFor($player, "messages.register_prompt"));
             if ($formsEnabled) {
                 $this->sendRegisterForm($player);
             } else {
@@ -87,14 +87,17 @@ class FormManager {
     }
 
     public function sendLoginForm(Player $player, ?string $errorMessage = null): void {
-        $messages = (array)$this->customMessages->get("messages");
-        $formsConfig = (array)$this->customMessages->get("forms");
-        $loginFormConfig = (array)($formsConfig["login"] ?? []);
+        $loginFormConfig = [
+            "title" => $this->translator->translateFor($player, "forms.login.title"),
+            "content" => $this->translator->translateFor($player, "forms.login.content"),
+            "password_label" => $this->translator->translateFor($player, "forms.login.password_label"),
+            "password_placeholder" => $this->translator->translateFor($player, "forms.login.password_placeholder"),
+        ];
 
-        $form = new CustomForm(function (Player $player, ?array $data) use ($messages): void {
+        $form = new CustomForm(function (Player $player, ?array $data) use ($loginFormConfig): void {
             if ($data === null) {
                 if ((bool)($this->configData->getNested("forms.kick-on-close") ?? false)) {
-                    $player->kick((string)($messages["login_form_closed"] ?? "You have closed the login form."));
+                    $player->kick($this->translator->translateFor($player, "messages.login_form_closed"));
                 } else {
                     $this->sendLoginForm($player);
                 }
@@ -110,12 +113,11 @@ class FormManager {
                     $context->setLoginType(PlayerPreAuthenticateEvent::LOGIN_TYPE_MANUAL);
                     $this->authenticationFlowManager->completeStep($player, 'xauth_login');
                 },
-                function (Throwable $e) use ($player, $messages): void {
+                function (Throwable $e) use ($player, $loginFormConfig): void {
                     if ($e instanceof AlreadyLoggedInException) {
-                        $this->sendLoginForm($player, (string)($messages["already_logged_in"] ?? "§cYou are already logged in."));
+                        $this->sendLoginForm($player, $this->translator->translateFor($player, "messages.already_logged_in"));
                     } elseif ($e instanceof PlayerBlockedException) {
-                        $message = (string)($messages["login_attempts_exceeded"] ?? "§cYou have exceeded the number of login attempts. Please try again in {minutes} minutes.");
-                        $message = str_replace('{minutes}', (string)$e->getRemainingMinutes(), $message);
+                        $message = $this->translator->translateFor($player, "messages.login_attempts_exceeded", ['minutes' => (string)$e->getRemainingMinutes()]);
                         $bruteforceConfig = (array)$this->configData->get('bruteforce_protection');
                         $kickOnBlock = (bool)($bruteforceConfig['kick_on_block'] ?? true);
                         if ($kickOnBlock) {
@@ -124,40 +126,45 @@ class FormManager {
                             $this->sendLoginForm($player, $message);
                         }
                     } elseif ($e instanceof NotRegisteredException) {
-                        $this->sendLoginForm($player, (string)($messages["not_registered"] ?? "§cYou are not registered. Please use /register <password> to register."));
+                        $this->sendLoginForm($player, $this->translator->translateFor($player, "messages.not_registered"));
                     } elseif ($e instanceof AccountLockedException) {
-                        $this->sendLoginForm($player, (string)($messages["account_locked_by_admin"] ?? "§cYour account has been locked by an administrator."));
+                        $this->sendLoginForm($player, $this->translator->translateFor($player, "messages.account_locked_by_admin"));
                     } elseif ($e instanceof IncorrectPasswordException) {
-                        $this->sendLoginForm($player, (string)($messages["incorrect_password"] ?? "§cIncorrect password. Please try again."));
+                        $this->sendLoginForm($player, $this->translator->translateFor($player, "messages.incorrect_password"));
                     } else {
-                        $this->sendLoginForm($player, (string)($messages["unexpected_error"] ?? "§cAn unexpected error occurred. Please try again."));
+                        $this->sendLoginForm($player, $this->translator->translateFor($player, "messages.unexpected_error"));
                         $this->plugin->getLogger()->error("An unexpected error occurred during form login: " . $e->getMessage());
                     }
                 }
             );
         });
 
-        $form->setTitle((string)($loginFormConfig["title"] ?? "Login"));
-        $content = (string)($loginFormConfig["content"] ?? "");
+        $form->setTitle((string)($loginFormConfig["title"]));
+        $content = (string)($loginFormConfig["content"]);
         if (!empty($content)) {
             $form->addLabel($content);
         }
         if ($errorMessage !== null) {
             $form->addLabel($errorMessage);
         }
-        $form->addInput((string)($loginFormConfig["password_label"] ?? "Password"), (string)($loginFormConfig["password_placeholder"] ?? ""), null, "password");
+        $form->addInput((string)($loginFormConfig["password_label"]), (string)($loginFormConfig["password_placeholder"]), null, "password");
         $player->sendForm($form);
     }
 
     public function sendRegisterForm(Player $player, ?string $errorMessage = null): void {
-        $messages = (array)$this->customMessages->get("messages");
-        $formsConfig = (array)$this->customMessages->get("forms");
-        $registerFormConfig = (array)($formsConfig["register"] ?? []);
+        $registerFormConfig = [
+            "title" => $this->translator->translateFor($player, "forms.register.title"),
+            "content" => $this->translator->translateFor($player, "forms.register.content"),
+            "password_label" => $this->translator->translateFor($player, "forms.register.password_label"),
+            "password_placeholder" => $this->translator->translateFor($player, "forms.register.password_placeholder"),
+            "confirm_password_label" => $this->translator->translateFor($player, "forms.register.confirm_password_label"),
+            "confirm_password_placeholder" => $this->translator->translateFor($player, "forms.register.confirm_password_placeholder"),
+        ];
 
-        $form = new CustomForm(function (Player $player, ?array $data) use ($messages): void {
+        $form = new CustomForm(function (Player $player, ?array $data) use ($registerFormConfig): void {
             if ($data === null) {
                 if ((bool)($this->configData->getNested("forms.kick-on-close") ?? false)) {
-                    $player->kick((string)($messages["register_form_closed"] ?? "You have closed the registration form."));
+                    $player->kick($this->translator->translateFor($player, "messages.register_form_closed"));
                 } else {
                     $this->sendRegisterForm($player);
                 }
@@ -168,7 +175,7 @@ class FormManager {
             if ($rulesToggleEnabled) {
                 $rulesAccepted = (bool)($data["rules_accepted"] ?? false);
                 if (!$rulesAccepted) {
-                    $this->sendRegisterForm($player, (string)($messages["form_register_rules_not_accepted"]));
+                    $this->sendRegisterForm($player, $this->translator->translateFor($player, "messages.form_register_rules_not_accepted"));
                     return;
                 }
             }
@@ -183,30 +190,29 @@ class FormManager {
                     $context->setLoginType(PlayerPreAuthenticateEvent::LOGIN_TYPE_REGISTRATION);
                     $this->authenticationFlowManager->completeStep($player, 'xauth_register');
                 },
-                function (Throwable $e) use ($player, $messages): void {
+                function (Throwable $e) use ($player): void {
                     if ($e instanceof AlreadyLoggedInException) {
-                        $player->sendMessage((string)($messages["already_logged_in"] ?? "§cYou are already logged in."));
+                        $this->sendRegisterForm($player, $this->translator->translateFor($player, "messages.already_logged_in"));
                     } elseif ($e instanceof AlreadyRegisteredException) {
-                        $this->sendRegisterForm($player, (string)($messages["already_registered"] ?? "§cYou are already registered. Please use /login <password> to log in."));
+                        $this->sendRegisterForm($player, $this->translator->translateFor($player, "messages.already_registered"));
                     } elseif ($e instanceof AccountLockedException) {
-                        $this->sendRegisterForm($player, (string)($messages["account_locked_by_admin"] ?? "§cYour account has been locked by an administrator."));
+                        $this->sendRegisterForm($player, $this->translator->translateFor($player, "messages.account_locked_by_admin"));
                     } elseif ($e instanceof RegistrationRateLimitException) {
-                        $this->sendRegisterForm($player, (string)($messages["registration_ip_limit_reached"] ?? "§cYou have reached the maximum number of registrations for your IP address."));
+                        $this->sendRegisterForm($player, $this->translator->translateFor($player, "messages.registration_ip_limit_reached"));
                     } elseif ($e instanceof PasswordMismatchException) {
-                        $this->sendRegisterForm($player, (string)($messages["password_mismatch"] ?? "§cPasswords do not match."));
+                        $this->sendRegisterForm($player, $this->translator->translateFor($player, "messages.password_mismatch"));
                     } elseif ($e instanceof InvalidCommandSyntaxException) {
-                        // This exception is used to pass validation messages from PasswordValidator
                         $this->sendRegisterForm($player, $e->getMessage());
                     } else {
-                        $this->sendRegisterForm($player, (string)($messages["unexpected_error"] ?? "§cAn unexpected error occurred. Please try again."));
+                        $this->sendRegisterForm($player, $this->translator->translateFor($player, "messages.unexpected_error"));
                         $this->plugin->getLogger()->error("An unexpected error occurred during form registration: " . $e->getMessage());
                     }
                 }
             );
         });
 
-        $form->setTitle((string)($registerFormConfig["title"] ?? "Register"));
-        $content = (string)($registerFormConfig["content"] ?? "");
+        $form->setTitle((string)($registerFormConfig["title"]));
+        $content = (string)($registerFormConfig["content"]);
         if (!empty($content)) {
             $form->addLabel($content);
         }
@@ -215,23 +221,27 @@ class FormManager {
         }
         $rulesToggleEnabled = (bool)($this->configData->getNested("forms.register.rules_toggle.enabled") ?? false);
         if ($rulesToggleEnabled) {
-            $rulesText = (string)($this->customMessages->getNested("forms.register.rules_text"));
+            $rulesText = $this->translator->translateFor($player, "forms.register.rules_text");
             if (!empty($rulesText)) {
                 $form->addLabel($rulesText);
             }
-            $form->addToggle((string)($this->customMessages->getNested("forms.register.rules_toggle_label")), false, "rules_accepted");
+            $form->addToggle($this->translator->translateFor($player, "forms.register.rules_toggle_label"), false, "rules_accepted");
         }
-        $form->addInput((string)($registerFormConfig["password_label"] ?? "Password"), (string)($registerFormConfig["password_placeholder"] ?? ""), null, "password");
-        $form->addInput((string)($registerFormConfig["confirm_password_label"] ?? "Confirm Password"), (string)($registerFormConfig["confirm_password_placeholder"] ?? ""), null, "confirm_password");
+        $form->addInput((string)($registerFormConfig["password_label"]), (string)($registerFormConfig["password_placeholder"]), null, "password");
+        $form->addInput((string)($registerFormConfig["confirm_password_label"]), (string)($registerFormConfig["confirm_password_placeholder"]), null, "confirm_password");
         $player->sendForm($form);
     }
 
     public function sendChangePasswordForm(Player $player, ?string $errorMessage = null): void {
-        $messages = (array)$this->customMessages->get("messages");
-        $formsConfig = (array)$this->customMessages->get("forms");
-        $changePasswordFormConfig = (array)($formsConfig["changepassword"] ?? []);
+        $changePasswordFormConfig = [
+            "title" => $this->translator->translateFor($player, "forms.changepassword.title"),
+            "content" => $this->translator->translateFor($player, "forms.changepassword.content"),
+            "old_password_label" => $this->translator->translateFor($player, "forms.changepassword.old_password_label"),
+            "new_password_label" => $this->translator->translateFor($player, "forms.changepassword.new_password_label"),
+            "confirm_new_password_label" => $this->translator->translateFor($player, "forms.changepassword.confirm_new_password_label"),
+        ];
 
-        $form = new CustomForm(function (Player $player, ?array $data) use ($messages): void {
+        $form = new CustomForm(function (Player $player, ?array $data) use ($changePasswordFormConfig): void {
             if ($data === null) {
                 return;
             }
@@ -242,49 +252,51 @@ class FormManager {
 
             Await::g2c(
                 $this->authenticationService->handleChangePasswordRequest($player, $oldPassword, $newPassword, $confirmNewPassword),
-                function () use ($player, $messages): void {
-                    $player->sendMessage((string)($messages["change_password_success"] ?? "§aYour password has been changed successfully."));
+                function () use ($player): void {
+                    $player->sendMessage($this->translator->translateFor($player, "messages.change_password_success"));
                 },
-                function (Throwable $e) use ($player, $messages): void {
+                function (Throwable $e) use ($player): void {
                     if ($e instanceof IncorrectPasswordException) {
-                        $this->sendChangePasswordForm($player, (string)($messages["incorrect_password"] ?? "§cIncorrect password."));
+                        $this->sendChangePasswordForm($player, $this->translator->translateFor($player, "messages.incorrect_password"));
                     } elseif ($e instanceof PasswordMismatchException) {
-                        $this->sendChangePasswordForm($player, (string)($messages["password_mismatch"] ?? "§cPasswords do not match."));
+                        $this->sendChangePasswordForm($player, $this->translator->translateFor($player, "messages.password_mismatch"));
                     } elseif ($e instanceof InvalidCommandSyntaxException) {
                         $this->sendChangePasswordForm($player, $e->getMessage());
                     } elseif ($e instanceof NotRegisteredException) {
-                        $this->sendChangePasswordForm($player, (string)($messages["not_registered"] ?? "§cYou are not registered."));
+                        $this->sendChangePasswordForm($player, $this->translator->translateFor($player, "messages.not_registered"));
                     } else {
-                        $this->sendChangePasswordForm($player, (string)($messages["unexpected_error"] ?? "§cAn unexpected error occurred. Please try again."));
+                        $this->sendChangePasswordForm($player, $this->translator->translateFor($player, "messages.unexpected_error"));
                         $this->plugin->getLogger()->error("An unexpected error occurred during password change form: " . $e->getMessage());
                     }
                 }
             );
         });
 
-        $form->setTitle((string)($changePasswordFormConfig["title"] ?? "Change Password"));
-        $content = (string)($changePasswordFormConfig["content"] ?? "");
+        $form->setTitle((string)($changePasswordFormConfig["title"]));
+        $content = (string)($changePasswordFormConfig["content"]);
         if (!empty($content)) {
             $form->addLabel($content);
         }
         if ($errorMessage !== null) {
             $form->addLabel($errorMessage);
         }
-        $form->addInput((string)($changePasswordFormConfig["old_password_label"] ?? "Old Password"), "", null, "old_password");
-        $form->addInput((string)($changePasswordFormConfig["new_password_label"] ?? "New Password"), "", null, "new_password");
-        $form->addInput((string)($changePasswordFormConfig["confirm_new_password_label"] ?? "Confirm New Password"), "", null, "confirm_new_password");
+        $form->addInput((string)($changePasswordFormConfig["old_password_label"]), "", null, "old_password");
+        $form->addInput((string)($changePasswordFormConfig["new_password_label"]), "", null, "new_password");
+        $form->addInput((string)($changePasswordFormConfig["confirm_new_password_label"]), "", null, "confirm_new_password");
         $player->sendForm($form);
     }
 
     public function sendForceChangePasswordForm(Player $player, ?string $errorMessage = null): void {
-        $messages = (array)$this->customMessages->get("messages");
-        $formsConfig = (array)$this->customMessages->get("forms");
-        $forceChangePasswordFormConfig = (array)($formsConfig["forcechangepassword"] ?? []);
+        $forceChangePasswordFormConfig = [
+            "title" => $this->translator->translateFor($player, "forms.forcechangepassword.title"),
+            "new_password_label" => $this->translator->translateFor($player, "forms.forcechangepassword.new_password_label"),
+            "confirm_new_password_label" => $this->translator->translateFor($player, "forms.forcechangepassword.confirm_new_password_label"),
+        ];
 
-        $form = new CustomForm(function (Player $player, ?array $data) use ($messages): void {
+        $form = new CustomForm(function (Player $player, ?array $data) use ($forceChangePasswordFormConfig): void {
             if ($data === null) {
                 if ((bool)($this->configData->getNested("forms.kick-on-close") ?? false)) {
-                    $player->kick((string)($messages["force_change_password_closed"] ?? "You must change your password to continue."));
+                    $player->kick($this->translator->translateFor($player, "messages.force_change_password_closed"));
                 } else {
                     $this->sendForceChangePasswordForm($player);
                 }
@@ -296,29 +308,29 @@ class FormManager {
 
             Await::g2c(
                 $this->authenticationService->handleForceChangePasswordRequest($player, $newPassword, $confirmNewPassword),
-                function () use ($player, $messages): void {
-                    $player->sendMessage((string)($messages["change_password_success"] ?? "§aYour password has been changed successfully."));
+                function () use ($player): void {
+                    $player->sendMessage($this->translator->translateFor($player, "messages.change_password_success"));
                 },
-                function (Throwable $e) use ($player, $messages): void {
+                function (Throwable $e) use ($player): void {
                     if ($e instanceof PasswordMismatchException) {
-                        $this->sendForceChangePasswordForm($player, (string)($messages["password_mismatch"] ?? "§cPasswords do not match."));
+                        $this->sendForceChangePasswordForm($player, $this->translator->translateFor($player, "messages.password_mismatch"));
                     } elseif ($e instanceof InvalidCommandSyntaxException) {
                         $this->sendForceChangePasswordForm($player, $e->getMessage());
                     } else {
-                        $this->sendForceChangePasswordForm($player, (string)($messages["unexpected_error"] ?? "§cAn unexpected error occurred. Please try again."));
+                        $this->sendForceChangePasswordForm($player, $this->translator->translateFor($player, "messages.unexpected_error"));
                         $this->plugin->getLogger()->error("An unexpected error occurred during forced password change form: " . $e->getMessage());
                     }
                 }
             );
         });
 
-        $form->setTitle((string)($forceChangePasswordFormConfig["title"] ?? "Forced Password Change"));
-        $form->addLabel((string)($messages["force_change_password_prompt"] ?? "For security reasons, you must change your password before you can continue."));
+        $form->setTitle((string)($forceChangePasswordFormConfig["title"]));
+        $form->addLabel($this->translator->translateFor($player, "messages.force_change_password_prompt"));
         if ($errorMessage !== null) {
             $form->addLabel($errorMessage);
         }
-        $form->addInput((string)($forceChangePasswordFormConfig["new_password_label"] ?? "New Password"), "", null, "new_password");
-        $form->addInput((string)($forceChangePasswordFormConfig["confirm_new_password_label"] ?? "Confirm New Password"), "", null, "confirm_new_password");
+        $form->addInput((string)($forceChangePasswordFormConfig["new_password_label"]), "", null, "new_password");
+        $form->addInput((string)($forceChangePasswordFormConfig["confirm_new_password_label"]), "", null, "confirm_new_password");
         $player->sendForm($form);
     }
 }

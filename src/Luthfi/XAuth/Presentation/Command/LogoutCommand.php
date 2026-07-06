@@ -30,13 +30,13 @@ namespace Luthfi\XAuth\Presentation\Command;
 use Luthfi\XAuth\Application\Auth\AuthenticationFacade;
 use Luthfi\XAuth\Application\Auth\LogoutOutcome;
 use Luthfi\XAuth\Presentation\Form\FormManager;
+use ChernegaSergiy\Language\TranslatorInterface;
 use pocketmine\command\Command;
 use pocketmine\command\CommandSender;
 use pocketmine\player\Player;
 use pocketmine\plugin\PluginBase;
 use pocketmine\plugin\PluginOwned;
 use pocketmine\plugin\PluginOwnedTrait;
-use pocketmine\utils\Config;
 use SOFe\AwaitGenerator\Await;
 use Throwable;
 
@@ -46,45 +46,43 @@ class LogoutCommand extends Command implements PluginOwned {
     public function __construct(
         private readonly AuthenticationFacade $authenticationService,
         private readonly FormManager $formManager,
-        private readonly Config $customMessages,
+        private readonly TranslatorInterface $translator,
         private readonly PluginBase $plugin
     ) {
-        $messages = (array)$this->customMessages->get("messages");
         parent::__construct(
             "logout",
-            (string)($messages["logout_command_description"] ?? "Logout from your account"),
-            (string)($messages["logout_command_usage"] ?? "/logout")
+            $this->translator->translate($this->translator->getDefaultLocale(), "messages.logout_command_description", [], null),
+            $this->translator->translate($this->translator->getDefaultLocale(), "messages.logout_command_usage", [], null)
         );
         $this->setPermission("xauth.command.logout");
     }
 
     public function execute(CommandSender $sender, string $label, array $args): bool {
         $commandSettings = (array)$this->plugin->getConfig()->get("command_settings");
-        $messages = (array)$this->customMessages->get("messages");
 
         if (isset($commandSettings['allow_logout_command']) && $commandSettings['allow_logout_command'] === false) {
-            $sender->sendMessage((string)($messages["logout_disabled"] ?? "§cThe /logout command is disabled on this server."));
+            $sender->sendMessage($this->translator->translateFor($sender, "messages.logout_disabled"));
             return false;
         }
 
         if (!$sender instanceof Player) {
-            $sender->sendMessage((string)($messages["command_only_in_game"] ?? "§cThis command can only be used in-game."));
+            $sender->sendMessage($this->translator->translateFor($sender, "messages.command_only_in_game"));
             return false;
         }
 
         if (!$this->authenticationService->isPlayerAuthenticated($sender)) {
-            $sender->sendMessage((string)($messages["not_logged_in"] ?? "§cYou are not logged in."));
+            $sender->sendMessage($this->translator->translateFor($sender, "messages.not_logged_in"));
             return false;
         }
 
         Await::g2c(
             $this->authenticationService->handleLogout($sender),
-            function(LogoutOutcome $outcome) use ($sender, $messages): void {
-                $sender->sendMessage((string)($messages["logout_success"] ?? "§aYou have been logged out."));
+            function(LogoutOutcome $outcome) use ($sender): void {
+                $sender->sendMessage($this->translator->translateFor($sender, "messages.logout_success"));
                 $this->formManager->promptAfterLogout($sender, $outcome);
             },
-            function(Throwable $e) use ($sender, $messages): void {
-                $sender->sendMessage((string)($messages["unexpected_error"] ?? "§cAn unexpected error occurred. Please try again."));
+            function(Throwable $e) use ($sender): void {
+                $sender->sendMessage($this->translator->translateFor($sender, "messages.unexpected_error"));
                 $this->plugin->getLogger()->error("An unexpected error occurred during logout: " . $e->getMessage());
             }
         );
