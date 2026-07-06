@@ -27,8 +27,8 @@ declare(strict_types=1);
 
 namespace Luthfi\XAuth\Presentation\Command;
 
-use Luthfi\XAuth\Application\Auth\AuthenticationService;
-use Luthfi\XAuth\Application\User\RegistrationService;
+use Luthfi\XAuth\Application\Auth\AuthenticationFacade;
+use Luthfi\XAuth\Application\User\RegistrationFacade;
 use Luthfi\XAuth\Domain\Exception\ConfirmationExpiredException;
 use Luthfi\XAuth\Domain\Exception\IncorrectPasswordException;
 use Luthfi\XAuth\Domain\Exception\UnregistrationNotInitiatedException;
@@ -46,8 +46,8 @@ class UnregisterCommand extends Command implements PluginOwned {
     use PluginOwnedTrait;
 
     public function __construct(
-        private readonly AuthenticationService $authenticationService,
-        private readonly RegistrationService $registrationService,
+        private readonly AuthenticationFacade $authenticationService,
+        private readonly RegistrationFacade $registrationService,
         private readonly Config $customMessages,
         private readonly PluginBase $plugin
     ) {
