@@ -98,7 +98,7 @@ class AuthenticationService {
         }
 
         $this->playerStateService->restorePlayerState($player);
-        $this->playerVisibilityService->updatePlayerVisibility($player);
+        $this->playerVisibilityService->updatePlayerVisibility($player, fn (Player $p): bool => $this->isPlayerAuthenticated($p));
 
         (new PlayerAuthenticateEvent($player, $context->getLoginType()))->call();
     }

@@ -343,7 +343,7 @@ class XAuthCommand extends Command implements PluginOwned {
                 }
                 break;
             case "reload":
-                $this->pluginControlService->reload();
+                $this->pluginControlService->reload(fn ($p): bool => $this->authenticationService->isPlayerAuthenticated($p));
                 $sender->sendMessage((string)($messages["xauth_reload_success"] ?? "§aXAuth configuration reloaded." ));
                 break;
             case "checkpassword":

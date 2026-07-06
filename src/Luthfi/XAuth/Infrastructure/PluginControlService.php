@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace Luthfi\XAuth\Infrastructure;
 
+use Closure;
 use Luthfi\XAuth\Domain\Player\VisibilityManager;
 use pocketmine\plugin\PluginBase;
 use pocketmine\utils\Config;
@@ -39,7 +40,7 @@ class PluginControlService {
         private VisibilityManager $visibilityManager,
     ) {}
 
-    public function reload(): void {
+    public function reload(Closure $isAuthenticated): void {
         $config = $this->plugin->getConfig();
 
         $oldData = [
@@ -59,7 +60,7 @@ class PluginControlService {
 
         if ($oldData !== $newData) {
             foreach ($this->plugin->getServer()->getOnlinePlayers() as $player) {
-                $this->visibilityManager->updatePlayerVisibility($player);
+                $this->visibilityManager->updatePlayerVisibility($player, $isAuthenticated);
             }
         }
     }

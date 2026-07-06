@@ -27,7 +27,7 @@ declare(strict_types=1);
 
 namespace Luthfi\XAuth\Domain\Player;
 
-use Luthfi\XAuth\Application\Auth\AuthenticationService;
+use Closure;
 use pocketmine\entity\effect\EffectInstance;
 use pocketmine\entity\effect\VanillaEffects;
 use pocketmine\network\mcpe\NetworkBroadcastUtils;
@@ -39,47 +39,31 @@ use pocketmine\utils\Config;
 
 class VisibilityManager {
 
-    private ?AuthenticationService $authenticationService = null;
-
     public function __construct(
         private PluginBase $plugin,
         private Config $configData,
         private Config $customMessages,
     ) {}
 
-    public function setAuthenticationService(AuthenticationService $authenticationService): void {
-        $this->authenticationService = $authenticationService;
-    }
-
-    public function updatePlayerVisibility(Player $targetPlayer): void {
+    public function updatePlayerVisibility(Player $targetPlayer, Closure $isAuthenticated): void {
         foreach ($this->plugin->getServer()->getOnlinePlayers() as $otherPlayer) {
             if ($targetPlayer === $otherPlayer) continue;
 
-            // Update how this online player sees the target player
-            $this->resolveVisibility($otherPlayer, $targetPlayer);
-
-            // Update how the target player sees this online player
-            $this->resolveVisibility($targetPlayer, $otherPlayer);
+            $this->resolveVisibility($otherPlayer, $targetPlayer, $isAuthenticated($otherPlayer), $isAuthenticated($targetPlayer));
         }
     }
 
-    private function resolveVisibility(Player $observer, Player $subject): void {
-        $authenticationService = $this->authenticationService;
+    private function resolveVisibility(Player $observer, Player $subject, bool $observerAuthenticated, bool $subjectAuthenticated): void {
         $config = $this->configData;
-
-        $observerAuthenticated = $authenticationService->isPlayerAuthenticated($observer);
-        $subjectAuthenticated = $authenticationService->isPlayerAuthenticated($subject);
 
         if ($observerAuthenticated) {
             $inWorldMode = strtolower((string)($config->getNested('in_world_visibility.mode') ?? 'packets'));
             if ($subjectAuthenticated) {
-                // Both authenticated - show everywhere
                 $observer->showPlayer($subject);
                 if ($inWorldMode === 'effect') {
                     $subject->getEffects()->remove(VanillaEffects::INVISIBILITY());
                 }
             } else {
-                // Observer authenticated, subject not - apply hiding logic
                 if ($inWorldMode === 'packets') {
                     $observer->hidePlayer($subject);
                 } elseif ($inWorldMode === 'effect') {
@@ -90,14 +74,12 @@ class VisibilityManager {
                 }
             }
 
-            // Handle player list visibility
             if (!$subjectAuthenticated && (bool)$config->getNested('player_list_visibility.hide', true)) {
                 $this->hideFromPlayerList($observer, $subject);
             } else {
                 $this->showInPlayerList($observer, $subject);
             }
         } else {
-            // Observer not authenticated
             if ($config->getNested('in_world_visibility.hide_others_from_unauthenticated', true)) {
                 $observer->hidePlayer($subject);
             } else {

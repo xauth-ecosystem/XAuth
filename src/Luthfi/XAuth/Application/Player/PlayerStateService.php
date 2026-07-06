@@ -87,7 +87,7 @@ class PlayerStateService {
             $player->getEffects()->add(new EffectInstance(VanillaEffects::BLINDNESS(), 2147483647, 0, false));
         }
 
-        $this->visibilityService->updatePlayerVisibility($player);
+        $this->visibilityService->updatePlayerVisibility($player, fn (): bool => false);
     }
 
     public function savePlayerState(Player $player): void {
