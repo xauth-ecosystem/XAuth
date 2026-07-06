@@ -28,10 +28,10 @@ declare(strict_types=1);
 namespace Luthfi\XAuth\Presentation\Form;
 
 use jojoe77777\FormAPI\CustomForm;
-use Luthfi\XAuth\Application\Auth\AuthenticationService;
+use Luthfi\XAuth\Application\Auth\AuthenticationFacade;
 use Luthfi\XAuth\Application\Auth\LogoutOutcome;
 use Luthfi\XAuth\Application\Auth\Pipeline\AuthenticationFlowManager;
-use Luthfi\XAuth\Application\User\RegistrationService;
+use Luthfi\XAuth\Application\User\RegistrationFacade;
 use Luthfi\XAuth\Domain\Event\PlayerChangePasswordEvent;
 use Luthfi\XAuth\Domain\Event\PlayerPreAuthenticateEvent;
 use Luthfi\XAuth\Domain\Exception\AccountLockedException;
@@ -56,8 +56,8 @@ class FormManager {
         private PluginBase $plugin,
         private Config $customMessages,
         private Config $configData,
-        private RegistrationService $registrationService,
-        private AuthenticationService $authenticationService,
+        private RegistrationFacade $registrationService,
+        private AuthenticationFacade $authenticationService,
         private AuthenticationFlowManager $authenticationFlowManager,
         private TitleService $titleService,
     ) {}
